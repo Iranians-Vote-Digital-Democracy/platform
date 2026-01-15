@@ -1,0 +1,103 @@
+# Geo Points Service Configuration
+# This service manages user points, events, and leaderboards
+#
+# REQUIRED:
+# 1. PostgreSQL database
+# 2. Connection to decentralized-auth-svc for JWT validation
+# 3. Rarimo L2 RPC for contract verification (read-only)
+
+log:
+  level: debug
+  disable_sentry: true
+
+listener:
+  addr: :8000
+
+# PostgreSQL connection
+db:
+  url: "postgres://rarimo:rarimo@postgres:5432/geo_points?sslmode=disable"
+
+# Auth service for JWT validation
+auth:
+  addr: "http://decentralized-auth-svc:8000"
+
+# Event types configuration
+event_types:
+  types:
+    - name: passport_scan
+      reward: 5
+      title: Points for passport scan
+      description: Get points for scanning passport and sharing data
+      short_description: Scan your passport
+      frequency: one-time
+      auto_claim: true
+    - name: free_weekly
+      title: Free weekly points
+      reward: 1
+      frequency: weekly
+      description: Get free points every week
+      short_description: Weekly reward
+    - name: be_referred
+      title: Referral welcome bonus
+      reward: 1
+      frequency: one-time
+      description: Be referred by a friend
+      short_description: Referral bonus
+      no_auto_open: true
+    - name: referral_common
+      reward: 1
+      frequency: one-time
+      title: Refer new users
+      description: Refer friends and earn rewards
+      short_description: Refer friends
+    - name: poll_participation
+      title: Participate in a poll
+      reward: 1
+      frequency: unlimited
+      description: Vote in a poll and get points
+      short_description: Vote in polls
+      no_auto_open: true
+      auto_claim: true
+
+# Daily questions feature
+daily_questions:
+  timezone: 0
+
+# User levels
+levels:
+  downgradeable: false
+  levels:
+    - lvl: 1
+      threshold: 0
+      referrals: 1
+    - lvl: 2
+      threshold: 10
+      infinity: true
+
+# ZK Proof verification settings (Rarimo L2 - READ ONLY)
+verifier:
+  allowed_age: 18
+  allowed_identity_timestamp: 1715698750
+
+# PoseidonSMT verification (reads from blockchain)
+poseidonsmt_root_verifier:
+  rpc: "https://l2.testnet.rarimo.com"
+  contract: "0x0473D9354069f1bD16A710b1A7d0494C61833Fff"
+  request_timeout: 10s
+
+# Poll verification
+poll_verifier:
+  rpc: "https://l2.testnet.rarimo.com"
+  proposal_state_address: "0x2Be5eF7434a14d08A2C8D8c886cBEB805ae7B671"
+
+# Signature verification key
+sig_verifier:
+  verification_key: "37bc75afc97f8bdcd21cda85ae7b2885b5f1205ae3d79942e56457230f1636a037cc7ebfe42998d66a3dd3446b9d29366271b4f2bd8e0d307db1d320b38fc02f"
+
+# Account abstraction (optional - for advanced features)
+abstraction:
+  rpc: "https://l2.testnet.rarimo.com"
+  account_factory: "0x0000000000000000000000000000000000000000"
+  point_tokens: "0x0000000000000000000000000000000000000000"
+  point_price: "1000000000"
+  private_key: "0000000000000000000000000000000000000000000000000000000000000001"

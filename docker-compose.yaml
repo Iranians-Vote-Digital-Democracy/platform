@@ -1,0 +1,100 @@
+version: '3.8'
+
+# Docker Compose for Rarimo - Voting & ID Registration
+#
+# Services:
+# - registration-relayer: Identity registration on Rarimo L2
+# - proof-verification-relayer: Voting on Rarimo L2 (feat/noir-voting branch)
+#
+# Prerequisites:
+# 1. Private key with RMO tokens on Rarimo L2 Testnet
+# 2. Checkout feat/noir-voting branch: cd proof-verification-relayer && git checkout feat/noir-voting
+#
+# Usage:
+#   docker-compose up -d
+
+services:
+  # ============================================
+  # Database (required by proof-verification-relayer)
+  # ============================================
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: rarimo-postgres
+    environment:
+      POSTGRES_USER: rarimo
+      POSTGRES_PASSWORD: rarimo
+      POSTGRES_DB: proof_verification
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rarimo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Registration Relayer (ID Registration)
+  # Sends registration transactions to Rarimo L2
+  # ============================================
+  
+  registration-relayer:
+    build:
+      context: ./registration-relayer
+      dockerfile: Dockerfile
+    container_name: registration-relayer
+    ports:
+      - "8001:8000"
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    volumes:
+      - ./configs/registration-relayer.yaml:/config.yaml:ro
+    restart: unless-stopped
+
+  # ============================================
+  # Proof Verification Relayer (Voting)
+  # Sends vote transactions to Rarimo L2
+  # NOTE: Uses feat/noir-voting branch!
+  # ============================================
+  
+  proof-verification-relayer:
+    build:
+      context: ./proof-verification-relayer
+      dockerfile: Dockerfile
+    container_name: proof-verification-relayer
+    ports:
+      - "8002:8000"
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    volumes:
+      - ./configs/proof-verification-relayer.yaml:/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["sh", "-c", "proof-verification-relayer migrate up && proof-verification-relayer run service"]
+    restart: unless-stopped
+
+  # ============================================
+  # API Gateway (Optional - routes all services)
+  # ============================================
+  
+  nginx:
+    image: nginx:alpine
+    container_name: rarimo-gateway
+    ports:
+      - "8000:80"
+    volumes:
+      - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - registration-relayer
+      - proof-verification-relayer
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    name: rarimo-network

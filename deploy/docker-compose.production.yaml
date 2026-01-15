@@ -1,0 +1,67 @@
+version: '3.8'
+
+# Production Docker Compose for Iranians.Vote
+# Rarimo L2 Mainnet Deployment
+#
+# Services:
+# - registration-relayer: Identity registration on Rarimo L2 Mainnet
+# - proof-verification-relayer: Voting (feat/noir-voting branch)
+#
+# Usage:
+#   docker compose -f docker-compose.production.yaml up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: iranians-vote-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rarimo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: proof_verification
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - iranians-vote
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rarimo -d proof_verification"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  registration-relayer:
+    image: ghcr.io/rarimo/registration-relayer:latest
+    container_name: registration-relayer
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    volumes:
+      - ../configs/registration-relayer.production.yaml:/config.yaml:ro
+    networks:
+      - iranians-vote
+
+  proof-verification-relayer:
+    image: ghcr.io/rarimo/proof-verification-relayer:latest
+    container_name: proof-verification-relayer
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8002:8000"
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    volumes:
+      - ../configs/proof-verification-relayer.production.yaml:/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - iranians-vote
+    command: ["sh", "-c", "proof-verification-relayer migrate up && proof-verification-relayer run service"]
+
+networks:
+  iranians-vote:
+    driver: bridge
+
+volumes:
+  postgres_data:

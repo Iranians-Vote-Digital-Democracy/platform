@@ -1,0 +1,27 @@
+# Decentralized Auth Service Configuration
+# This service issues JWTs based on ZK proof verification
+# NO blockchain interaction required
+
+log:
+  level: debug
+  disable_sentry: true
+
+listener:
+  addr: :8000
+
+jwt:
+  # IMPORTANT: Change this in production!
+  secret_key: 0xbcb14d08dc1472b80f49eaf72f0873ac314a7146083bbf3694df8c3238949f2ec0971427f5509382a2812c700e541e328cd6ec65a1383c3ca435cdf55862dc4b
+  access_expiration_time: 12h
+  refresh_expiration_time: 24h
+
+cookies:
+  domain: "localhost"
+  secure: false  # Set to true in production with HTTPS
+  same_site: 2   # Lax
+
+verifier:
+  # Set to true to enable ZK proof verification
+  # When false, any proof is accepted (useful for testing)
+  enabled: false
+  schema: 12345

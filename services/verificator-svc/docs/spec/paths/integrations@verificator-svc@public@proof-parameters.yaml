@@ -1,0 +1,32 @@
+get:
+    tags:
+      - Proof
+    summary: Get Proof Parameters(internal)
+    description: |
+      Get proof parameters for user with provided query parameters(internal, better to use verification links to get proof-parameters).
+    operationId: getVerificationParameters
+    parameters:
+      - $ref: '#/components/parameters/idParam'
+      - $ref: '#/components/parameters/typeOfVerificationAgeParam'
+      - $ref: '#/components/parameters/typeOfVerificationUniquenessParam'
+      - $ref: '#/components/parameters/nationalityParam'
+      - $ref: '#/components/parameters/eventIdParam'
+      - $ref: '#/components/parameters/expirationLowerBoundParam'
+    responses:
+      200:
+        description: Success
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  $ref: '#/components/schemas/Parameters'
+      400:
+        $ref: '#/components/responses/invalidParameter'
+      404:
+        $ref: '#/components/responses/notFound'
+      500:
+        $ref: '#/components/responses/internalError'

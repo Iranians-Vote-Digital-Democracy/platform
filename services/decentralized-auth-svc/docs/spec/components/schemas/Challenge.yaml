@@ -1,0 +1,16 @@
+allOf:
+  - $ref: '#/components/schemas/ChallengeKey'
+  - type: object
+    required:
+      - attributes
+    properties:
+      attributes:
+        required:
+          - challenge
+        properties:
+          challenge:
+            type: string
+            description: |
+              Base64 encoded challenge. Use it to generate Query ZK-proof.
+              Decode base64 string and convert into big-endian decimal number.
+            example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9

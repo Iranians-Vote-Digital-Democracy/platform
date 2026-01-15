@@ -1,0 +1,16 @@
+allOf:
+  - $ref: '#/components/schemas/TokenKey'
+  - type: object
+    required:
+      - attributes
+    properties:
+      attributes:
+        required:
+          - access_token
+          - refresh_token
+        type: object
+        properties:
+          access_token:
+            $ref: '#/components/schemas/JWT'
+          refresh_token:
+            $ref: '#/components/schemas/JWT'

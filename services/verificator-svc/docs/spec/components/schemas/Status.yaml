@@ -1,0 +1,14 @@
+allOf:
+  - $ref: '#/components/schemas/StatusKey'
+  - type: object
+    required:
+      - attributes
+    properties:
+      attributes:
+        type: object
+        required:
+          - status
+        properties:
+          status:
+            type: string
+            enum: [not_verified, verified, failed_verification, uniqueness_check_failed]

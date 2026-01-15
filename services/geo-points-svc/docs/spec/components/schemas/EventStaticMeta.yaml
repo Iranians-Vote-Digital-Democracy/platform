@@ -1,0 +1,101 @@
+type: object
+description: |
+  Primary event metadata in plain JSON. This is a template
+  to be filled by `dynamic` when it's present.
+  
+  This structure is also reused as request body to event type creation and update.
+required:
+  - name
+  - reward
+  - title
+  - description
+  - short_description
+  - frequency
+  - flag
+  - auto_claim
+  - disabled
+properties:
+  name:
+    type: string
+    description: Unique event code name
+    example: get_poh
+  reward:
+    type: integer
+    format: int64
+    description: Reward amount in points
+    example: 50
+  title:
+    type: string
+    example: Get PoH credential
+  description:
+    type: string
+    example: Lorem ipsum dolor sit amet
+  short_description:
+    type: string
+    example: Short description
+  frequency:
+    type: string
+    description: |
+      Event frequency, which means how often you can fulfill
+      certain task and claim the reward.
+    enum: [one-time, daily, weekly, unlimited]
+  starts_at:
+    type: string
+    format: time.Time
+    description: General event starting date (UTC RFC3339)
+    example: 2020-01-01T00:00:00Z
+  expires_at:
+    type: string
+    format: time.Time
+    description: General event expiration date (UTC RFC3339)
+    example: 2020-01-01T00:00:00Z
+  action_url:
+    type: string
+    description: Page where you can fulfill the event
+    example: https://robotornot.rarimo.com
+  logo:
+    type: string
+    description: Event logo
+    example: https://logo.com/some_logo.svg
+  flag:
+    type: string
+    description: |
+      Event configuration flag:
+        - active: Events can be opened, fulfilled, claimed
+        - not_started: Event are not available yet, see `starts_at`
+        - expired: Event is not available, as it has already expired, see `expires_at`
+        - disabled: Event is disabled in the system
+      
+      If event is disabled, it doesn't matter if it's expired or not started:
+      it has `disabled` flag.
+      
+      Do not specify this field on creation: this structure is reused for request body too.
+    enum:
+      - active
+      - not_started
+      - expired
+      - disabled
+  auto_claim:
+    type: boolean
+    description: Whether the event is automatically claimed on fulfillment, or requires manual claim
+  disabled:
+    type: boolean
+    description: Whether the event is disabled in the system. Disabled events can only be retrieved.
+  qr_code_value:
+    type: string
+    description: Base64-encoded QR code. Must match the code provided in event type.
+    example: "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABaElEQVR4AWP4//8/AyUYw"
+  usage_count:
+    type: integer
+    format: int
+    description: Number of uses. Only available to the administrator.
+    example: 1002
+  poll_event_id:
+    type: string
+    description: Decimal value of the Event ID
+    example: "123456789987654321"
+  poll_contract:
+    type: string
+    description: Hex voting contract address with 0x.
+    example: "0x123...123"
+    pattern: '^0x[0-9a-fA-F]{40}$'

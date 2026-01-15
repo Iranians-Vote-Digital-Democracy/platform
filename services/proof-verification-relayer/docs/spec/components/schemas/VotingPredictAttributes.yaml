@@ -1,0 +1,18 @@
+type: object
+x-go-is-request: true
+properties:
+  amount:
+    type: string
+    pattern: "^[0-9]+$"
+    example: "10000"
+    description: The amount of tokens available for covering transactions
+  count_tx:
+    type: string
+    pattern: "^[0-9]+$"
+    example: "10000"
+    description: The number of transactions that need to be covered
+  voting_id:
+    type: integer
+    format: int64
+    example: 12
+    description: ID of the voting to which the vote

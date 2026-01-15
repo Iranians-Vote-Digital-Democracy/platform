@@ -1,0 +1,35 @@
+get:
+  tags:
+    - Voting Info
+  summary: Get proposal info array
+  description: This endpoint returns details about the proposals, including its current status, configuration, options.
+  operationId: proposalInfo
+  parameters:
+    - $ref: '#/components/parameters/proposalCreatorParam'
+    - $ref: '#/components/parameters/citizenshipParam'
+    - $ref: '#/components/parameters/MaxAgeParam'
+    - $ref: '#/components/parameters/MinAgeParam'
+    - $ref: '#/components/parameters/proposalIDParam'
+    - $ref: '#/components/parameters/sexParam'
+    - $ref: '#/components/parameters/votingStatus'
+    - $ref: '#/components/parameters/pageLimitParam'
+    - $ref: '#/components/parameters/sortingParam'
+    - $ref: '#/components/parameters/pageNumberParam'
+  responses:
+    200:
+      description: Success
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProposalInfo'
+    500:
+      description: Internal Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InternalError'

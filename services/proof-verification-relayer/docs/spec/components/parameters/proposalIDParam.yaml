@@ -1,0 +1,7 @@
+name: 'filter[proposal_id]'
+in: query
+required: false
+schema:
+  type: integer
+  format: int64
+description: Id for proposal

@@ -1,0 +1,51 @@
+delete:
+  tags:
+    - Light User verification[DEPRECATED]
+  summary: Delete user
+  description: |
+    DEPRECATED: The light verification flow is deprecated and will be removed in a future version. Please use the full verification flow instead.
+
+    Delete user by UserID.
+  deprecated: true
+  operationId: deleteUser
+  parameters:
+    - $ref: '#/components/parameters/pathID'
+  responses:
+    '204':
+      description: User deleted
+    400:
+      $ref: '#/components/responses/invalidParameter'
+    404:
+      $ref: '#/components/responses/notFound'
+    500:
+      $ref: '#/components/responses/internalError'
+get:
+  tags:
+    - Light User verification[DEPRECATED]
+  summary: Get user
+  description: |
+    DEPRECATED: The light verification flow is deprecated and will be removed in a future version. Please use the full verification flow instead.
+
+    Get information about user by UserID
+  deprecated: true
+  operationId: getUser
+  parameters:
+    - $ref: '#/components/parameters/pathID'
+  responses:
+    200:
+      description: Success
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            required:
+              - data
+            properties:
+              data:
+                $ref: '#/components/schemas/UserParams'
+    400:
+      $ref: '#/components/responses/invalidParameter'
+    404:
+      $ref: '#/components/responses/notFound'
+    500:
+      $ref: '#/components/responses/internalError'

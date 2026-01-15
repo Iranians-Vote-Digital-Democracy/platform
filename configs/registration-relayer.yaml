@@ -1,0 +1,40 @@
+# Registration Relayer Configuration
+# This service SENDS TRANSACTIONS to Rarimo L2
+# 
+# REQUIRED: A funded private key on Rarimo L2 Testnet
+# Get testnet tokens from: https://faucet.testnet.rarimo.com
+
+log:
+  level: debug
+  disable_sentry: true
+
+listener:
+  addr: :8000
+
+network:
+  # Rarimo L2 Testnet RPC
+  rpc: "https://l2.testnet.rarimo.com"
+  
+  # Registration contract address (from passport-contracts)
+  # See: https://github.com/rarimo/passport-contracts/releases
+  registration: "0x511B5Ad9E911Ad5E87e3acb5862976F1398F9A68"
+  
+  # LightweightState contract (optional)
+  lightweight_state: "0x29516F57C90459c279CF1981D8BEb3b6C1d5B3dB"
+  
+  # REQUIRED: Your private key (without 0x prefix)
+  # WARNING: Use a dedicated relayer wallet, not your main wallet!
+  # This wallet needs RMO tokens for gas fees
+  private_key: "YOUR_PRIVATE_KEY_HERE_WITHOUT_0x"
+  
+  # Gas settings
+  gas_limit_multiplier: 1.2
+  
+  # Whitelist of allowed destination contracts
+  # Users can only send transactions to these addresses
+  whitelist:
+    - "0x511B5Ad9E911Ad5E87e3acb5862976F1398F9A68"  # Registration
+    - "0xBdFA8630701e989E0436dAed6a8bFBa442D4FCC1"  # RegistrationPoseidonSMT
+
+cop:
+  disabled: true

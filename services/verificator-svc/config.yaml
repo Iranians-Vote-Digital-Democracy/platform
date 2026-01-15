@@ -1,0 +1,39 @@
+log:
+  level: debug
+  disable_sentry: true
+
+db:
+  url: pg_url
+
+listener:
+  addr: :8000
+
+cop:
+  disabled: true
+  endpoint: "http://..."
+  upstream: "http://..."
+  service_name: verificator-svc
+  service_port: 80
+
+callback:
+  url: "http://localhost:8000"
+
+verifier:
+  verification_key_path: "./proof_keys/passport.json"
+  allowed_identity_timestamp: 1741972260
+  event_id: "event_id"
+  multiproof: false
+  preserve_user_id_case: false
+  erc_1155: "0x0000000000000000000000000000000000000000"
+
+signature_verification:
+  pub_key: "04e29323ad356ab524fa5dbe3e490244e741b4d445ac7d2ee5f321556b3fda616bb9d2f2216fc27e099ab3019103cca872679e130629b2b90ea16cedb2b2136371"
+
+poseidonsmt_root_verifier:
+  rpc: "https://l2.rarimo.com"
+  contract: "0x479F84502Db545FA8d2275372E0582425204A879"
+  request_timeout: 10s
+
+auth:
+  enabled: false
+  addr: http://rarime-auth

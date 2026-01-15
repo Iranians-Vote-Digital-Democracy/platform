@@ -1,0 +1,43 @@
+post:
+  tags:
+    - Light Signature[DEPRECATED]
+  summary: Receive signature and message by callback(mobile)
+  description: >-
+    DEPRECATED: The light verification flow is deprecated and will be removed in a future version. Please use the full verification flow instead.
+
+    It receives the signature and message for verification by callback url
+  deprecated: true
+  operationId: receiveSignatureByCallback
+  parameters:
+    - $ref: '#/components/parameters/pathIDHash'
+  requestBody:
+    required: true
+    content:
+      application/vnd.api+json:
+        schema:
+          type: object
+          required:
+            - data
+          properties:
+            data:
+              $ref: '#/components/schemas/Signature'
+  responses:
+    200:
+      description: Success
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            required:
+              - data
+            properties:
+              data:
+                $ref: '#/components/schemas/Status'
+    400:
+      $ref: '#/components/responses/invalidParameter'
+    401:
+      $ref: '#/components/responses/Unauthorized'
+    404:
+      $ref: '#/components/responses/notFound'
+    500:
+      $ref: '#/components/responses/internalError'

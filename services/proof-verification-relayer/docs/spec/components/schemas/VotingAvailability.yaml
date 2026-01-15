@@ -1,0 +1,8 @@
+allOf:
+  - $ref: '#/components/schemas/VotingAvailabilityKey'
+  - type: object
+    required:
+      - attributes
+    properties:
+      attributes:
+        $ref: "#/components/schemas/VotingAvailabilityAttributes"

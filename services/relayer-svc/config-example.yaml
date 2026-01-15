@@ -1,0 +1,67 @@
+log:
+  disable_sentry: true
+  level: debug
+
+listener:
+  addr: :8000
+
+cop:
+  disabled: true
+  endpoint: "http://..."
+  upstream: "http://..."
+  service_name: relayer-svc
+  service_port: 80
+
+redis:
+  addr: localhost:6379
+  username: ""
+  password: ""
+
+core:
+  addr: tcp://localhost:26657
+
+cosmos:
+  addr: localhost:9090
+
+vault:
+  address: "http://localhost:8200"
+  mount: "secret"
+  secret: "relayer"
+  token: "dev-only-token"
+
+evm:
+  chains:
+    - name: "Goerli"
+      bridge_address: "0x95b8A46995AdD59DeE646cF116b10DDFFf711F49"
+      bridge_facade_address: "0x352b597247bD1dbD36e6Cf54F6658b8699c86cE8"
+      rpc: "https://goerli.infura.io/v3/..."
+    - name: "Fuji"
+      bridge_address: "0x73Fc46B49C02b128ad612c830C0ad379365b07A8"
+      bridge_facade_address: "0xD8bd387aA83e2eDcdB0b6a5dd4F87a96db081C2f"
+      rpc: "https://avalanche-fuji.infura.io/v3/..."
+
+solana:
+  rpc: "https://api.devnet.solana.com"
+  ws: "wss://api.devnet.solana.com"
+  bridge_program_id: "DVUGEV7Qe8MLJSSHsjRH6rzMnA1a5DhVP7D8Z2ctwPgb"
+  bridge_admin_seed: "AkMc5ssu4Yv5nAxiYN5GdvGpesJbFShX5GdFNgTN73UK"
+
+near:
+  rpc: "https://rpc.testnet.near.org"
+  bridge_address: "bridge.rarimo.testnet"
+  submitter_address: "rarimo.testnet"
+
+bouncer:
+  ttl: 6000
+
+horizon:
+  url: "http://..."
+
+scheduler:
+  start_block: 2
+
+rarimo:
+  chain_id: "rarimo"
+  coin: "urmo"
+  gas_limit: 100000000
+  min_gas_price: 1

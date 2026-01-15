@@ -1,0 +1,12 @@
+type: object
+required:
+  - id
+  - type
+properties:
+  id:
+    type: string
+    description: Unique ID of the state record in db
+  type:
+    type: string
+    enum:
+      - state_v2

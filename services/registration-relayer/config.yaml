@@ -1,0 +1,31 @@
+network:
+  rpc: ""
+  registration: ""
+  lightweight_state: ""
+  private_key: ""
+  vault_address: "https://127.0.0.1:8200"
+  vault_mount_path: "secret_data"
+  gas_limit_multiplier: 1.2
+
+  whitelist: 
+    - 0x123...123
+    - 0x123...123
+    - 0x123...123
+    - 0x123...123
+    - 0x123...123
+    - 0x123...123
+    - 0x123...123
+
+log:
+  level: debug
+  disable_sentry: true
+
+listener:
+  addr: :8000
+
+cop:
+  disabled: true
+  endpoint: "http://..."
+  upstream: "http://..."
+  service_name: registration-relayer
+  service_port: 80

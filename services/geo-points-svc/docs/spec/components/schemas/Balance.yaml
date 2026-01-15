@@ -1,0 +1,62 @@
+allOf:
+  - $ref: '#/components/schemas/BalanceKey'
+  - type: object
+    required:
+      - attributes
+    properties:
+      attributes:
+        type: object
+        required:
+          - amount
+          - created_at
+          - updated_at
+          - level
+        properties:
+          amount:
+            type: integer
+            format: int64
+            description: Amount of points
+            example: 580
+          is_disabled:
+            type: boolean
+            description: |
+              Whether the user was not referred with some code. If it wasn't - balance
+              is disabled and very limited in functionality.
+            example: false
+          created_at:
+            type: integer
+            description: Unix timestamp of balance creation
+            example: 1706531218
+          updated_at:
+            type: integer
+            description: Unix timestamp of the last points accruing
+            example: 1706531218
+          rank:
+            type: integer
+            format: int
+            description: Rank of the user in the full leaderboard. Returned only for the single user.
+            example: 294
+          referral_codes:
+            type: array
+            description: Referral codes. Returned only for the single active balance.
+            items:
+              $ref: '#/components/schemas/ReferralCode'
+          referred_users_count:
+            type: integer
+            format: int
+            description: Number of invited users. Returned only for the single active balance.
+            example: 13
+          rewarded_referred_users_count:
+            type: integer
+            format: int
+            description: Number of users for whom the reward was received. Returned only for the single active balance.
+            example: 5
+          level:
+            type: integer
+            format: int
+            description: The level indicates user permissions and features 
+            example: 2
+          is_verified:
+            type: boolean
+            description: |
+              Whether the user has scanned passport. Returned only for the single user.

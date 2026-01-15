@@ -1,0 +1,8 @@
+in: path
+name: 'user_id'
+required: true
+description: "User identifier (e.g., email, address)."
+example: "user@example.com"
+schema:
+  type: string
+  fomat: string
