@@ -2,10 +2,11 @@
 set -e
 
 # Iranians.Vote Production Deployment Script
+# Server: 173.212.214.147 (api.iranians.vote)
 # Usage: ./deploy.sh [pull|start|stop|restart|logs|status]
 
 DEPLOY_DIR="/opt/iranians-vote"
-REPO_URL="https://github.com/Iranians-Vote-Digital-Democracy/platform.git"
+REPO_URL="https://github.com/ArmaniranEmpire/IV.git"
 BRANCH="main"
 
 cd $DEPLOY_DIR
@@ -24,6 +25,15 @@ case "$1" in
   start)
     echo "🚀 Starting services..."
     cd repo/platform/deploy
+    
+    # Check for .env
+    if [ ! -f .env ]; then
+      echo "⚠️  No .env file found. Copying from .env.example..."
+      cp .env.example .env
+      echo "⚠️  Please edit .env and set RELAYER_PRIVATE_KEY, then run again"
+      exit 1
+    fi
+    
     docker compose -f docker-compose.production.yaml up -d
     echo "✅ Services started"
     docker compose -f docker-compose.production.yaml ps

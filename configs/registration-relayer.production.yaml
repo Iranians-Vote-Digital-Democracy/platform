@@ -1,4 +1,5 @@
 # Registration Relayer - Production Config (Rarimo L2 Mainnet)
+# Server: 173.212.214.147 (api.iranians.vote)
 # Reference: https://github.com/rarimo/passport-contracts/releases/tag/beta-release
 
 log:
@@ -9,25 +10,26 @@ listener:
   addr: :8000
 
 network:
-  # Rarimo L2 Mainnet
-  rpc: "https://rpc.evm.mainnet.rarimo.com"
-  
-  # Registration2 proxy contract (mainnet)
+  # Rarimo L2 Mainnet RPC
+  rpc: "https://l2.rarimo.com"
+
+  # Registration2 contract address (proxy)
   registration: "0x11BB4B14AA6e4b836580F3DBBa741dD89423B971"
-  
-  # StateKeeper proxy contract (mainnet)
+
+  # StateKeeper contract
   lightweight_state: "0x61aa5b68D811884dA4FEC2De4a7AA0464df166E1"
-  
+
   # REQUIRED: Your private key (without 0x prefix)
-  # This wallet needs RMO tokens for gas fees
-  private_key: "REPLACE_WITH_YOUR_PRIVATE_KEY"
-  
-  gas_limit_multiplier: 1.3
-  
+  # Admin wallet: 0x7DCFcCd0f80C3eED4dBcac1B597E667E0D0F731c
+  private_key: "${RELAYER_PRIVATE_KEY}"
+
+  # Gas settings
+  gas_limit_multiplier: 1.2
+
   # Whitelist of allowed destination contracts
   whitelist:
-    - "0x11BB4B14AA6e4b836580F3DBBa741dD89423B971"  # Registration2
-    - "0x479F84502Db545FA8d2275372E0582425204A879"  # RegistrationSMT
+    - "0x11BB4B14AA6e4b836580F3DBBa741dD89423B971" # Registration2
+    - "0x479F84502Db545FA8d2275372E0582425204A879" # RegistrationSMT
 
 cop:
   disabled: true
