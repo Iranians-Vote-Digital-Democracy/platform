@@ -129,6 +129,7 @@ import {
   NoirRegisterIdentity_1_256_3_4_336_248_1_560_4_256__factory,
   NoirRegisterIdentity_1_256_3_5_336_232_NA__factory,
   NoirRegisterIdentity_1_256_3_7_336_264_20_2760_6_2008__factory,
+  NoirRegisterIdentity_ID_Card_I__factory,
 } from "@ethers-v6";
 
 import {
@@ -288,6 +289,7 @@ import {
   Z_NOIR_PASSPORT_1_256_3_4_336_248_1_560_4_256,
   Z_NOIR_PASSPORT_1_256_3_5_336_232_NA,
   Z_NOIR_PASSPORT_1_256_3_7_336_264_20_2760_6_2008,
+  Z_NOIR_PASSPORT_ID_CARD_I,
 } from "@/scripts/utils/types";
 
 import { getConfig } from "./config/config";
@@ -1345,6 +1347,13 @@ export = async (deployer: Deployer) => {
   await registration.mockAddPassportVerifier(
     Z_NOIR_PASSPORT_1_256_3_7_336_264_20_2760_6_2008,
     await pNoirPassport_1_256_3_7_336_264_20_2760_6_2008.getAddress(),
+  );
+
+  // Iranian ID Card verifier
+  const pNoirPassport_ID_Card_I = await deployer.deployed(NoirRegisterIdentity_ID_Card_I__factory);
+  await registration.mockAddPassportVerifier(
+    Z_NOIR_PASSPORT_ID_CARD_I,
+    await pNoirPassport_ID_Card_I.getAddress(),
   );
 
   await stateKeeper.mockAddRegistrations([config.registrationName], [await registration.getAddress()]);

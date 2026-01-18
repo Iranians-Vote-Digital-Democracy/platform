@@ -121,6 +121,7 @@ import {
   NoirRegisterIdentity_1_256_3_4_336_248_1_560_4_256__factory,
   NoirRegisterIdentity_1_256_3_5_336_232_NA__factory,
   NoirRegisterIdentity_1_256_3_7_336_264_20_2760_6_2008__factory,
+  NoirRegisterIdentity_ID_Card_I__factory,
 } from "@ethers-v6";
 
 export const deployPVerifiers = async (deployer: Deployer) => {
@@ -255,4 +256,7 @@ export const deployPVerifiers = async (deployer: Deployer) => {
   await deployer.deploy(NoirRegisterIdentity_1_256_3_4_336_248_1_560_4_256__factory);
   await deployer.deploy(NoirRegisterIdentity_1_256_3_5_336_232_NA__factory);
   await deployer.deploy(NoirRegisterIdentity_1_256_3_7_336_264_20_2760_6_2008__factory);
+
+  // Iranian ID Card verifier
+  await deployer.deploy(NoirRegisterIdentity_ID_Card_I__factory);
 };
