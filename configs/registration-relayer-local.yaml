@@ -1,0 +1,34 @@
+# Registration Relayer Configuration - LOCAL HARDHAT
+# Points to local Hardhat node at http://host.docker.internal:8545
+
+log:
+  level: debug
+  disable_sentry: true
+
+listener:
+  addr: :8000
+
+network:
+  # Local Hardhat RPC (host.docker.internal for Docker containers)
+  rpc: "http://host.docker.internal:8545"
+
+  # Registration contract address (deployed to local Hardhat)
+  registration: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
+
+  # StateKeeper contract
+  lightweight_state: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"
+
+  # Hardhat's first default account private key (Account #0)
+  # This account has 10000 ETH on local Hardhat
+  private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+  # Gas settings
+  gas_limit_multiplier: 1.2
+
+  # Whitelist of allowed destination contracts
+  whitelist:
+    - "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"  # Registration2
+    - "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"  # RegistrationPoseidonSMT
+
+cop:
+  disabled: true

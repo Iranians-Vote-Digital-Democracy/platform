@@ -1,0 +1,69 @@
+# Proof Verification Relayer Configuration - LOCAL HARDHAT
+# Points to local Hardhat node at http://host.docker.internal:8545
+
+log:
+  level: debug
+  disable_sentry: true
+
+listener:
+  addr: :8000
+
+# PostgreSQL connection
+db:
+  url: "postgres://rarimo:rarimo@postgres:5432/proof_verification?sslmode=disable"
+
+# Vault disabled - using direct private key
+vault:
+  disabled: true
+
+network:
+  # Local Hardhat RPC
+  rpc: "http://host.docker.internal:8545"
+  gas_multiplier: 1.23
+
+  # Hardhat's first default account private key (Account #0)
+  private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+# Smart contract addresses (deployed to local Hardhat)
+contracts:
+  voting_registry:
+    address: null
+  lightweight_state:
+    address: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"  # StateKeeper
+  register2:
+    address: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"  # Registration2
+    block: 0
+
+# Voting V2 configuration (for BioPassportVoting)
+voting_v2:
+  enable: true
+  rpc: "http://host.docker.internal:8545"
+  private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+  proposal_state_address: "0x6212cb549De37c25071cF506aB7E115D140D9e42"  # ProposalsState
+  block: 0
+  gas_limit: 800000
+  check_with_subscribe: false
+
+# State replicator configuration (local addresses)
+replicator:
+  address: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"  # StateKeeper
+  source_smt: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"  # RegistrationSMT
+  root_prefix: "Rarimo root"
+
+# IPFS for proposal metadata
+ipfs:
+  url: "https://ipfs.rarimo.com/ipfs"
+  max_retries: 3
+  min_abnormal_period: 2s
+  max_abnormal_period: 8s
+
+# Event listener settings
+pinger:
+  blocks_distance: 10000
+  timeout: 5s
+  normal_period: 10s
+  min_abnormal_period: 10s
+  max_abnormal_period: 10s
+
+cop:
+  disabled: true

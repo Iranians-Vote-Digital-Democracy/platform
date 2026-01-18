@@ -1,0 +1,101 @@
+version: '3.8'
+
+# Docker Compose for Local Hardhat Development
+#
+# Points to local Hardhat node at http://host.docker.internal:8545
+# Uses contracts deployed on local Hardhat (see CLAUDE_LOG.md for addresses)
+#
+# Prerequisites:
+# 1. Start Hardhat node: cd /Users/nh2/dev/passport-contracts && npx hardhat node
+# 2. Deploy contracts (already done - addresses in configs)
+#
+# Usage:
+#   cd /Users/nh2/dev/platform
+#   docker compose -f docker-compose-local.yaml up -d
+
+services:
+  # ============================================
+  # Database (required by proof-verification-relayer)
+  # ============================================
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: rarimo-postgres-local
+    environment:
+      POSTGRES_USER: rarimo
+      POSTGRES_PASSWORD: rarimo
+      POSTGRES_DB: proof_verification
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rarimo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Registration Relayer (ID Registration)
+  # Sends registration transactions to local Hardhat
+  # ============================================
+
+  registration-relayer:
+    image: registration-relayer:local
+    container_name: registration-relayer-local
+    ports:
+      - "8001:8000"
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    volumes:
+      - ./configs/registration-relayer-local.yaml:/config.yaml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["run", "service"]
+    restart: unless-stopped
+
+  # ============================================
+  # Proof Verification Relayer (Voting)
+  # Sends vote transactions to local Hardhat
+  # ============================================
+
+  proof-verification-relayer:
+    image: proof-verification-relayer:local
+    container_name: proof-verification-relayer-local
+    ports:
+      - "8002:8000"
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    volumes:
+      - ./configs/proof-verification-relayer-local.yaml:/config.yaml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["proof-verification-relayer migrate up && proof-verification-relayer run service"]
+    restart: unless-stopped
+
+  # ============================================
+  # API Gateway (Routes all services)
+  # ============================================
+
+  nginx:
+    image: nginx:alpine
+    container_name: rarimo-gateway-local
+    ports:
+      - "8000:80"
+    volumes:
+      - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - registration-relayer
+      - proof-verification-relayer
+    restart: unless-stopped
+
+volumes:
+  postgres_data_local:
+
+networks:
+  default:
+    name: rarimo-network-local

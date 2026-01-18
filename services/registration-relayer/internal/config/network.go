@@ -10,8 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	vaultapi "github.com/hashicorp/vault/api"
-	"gitlab.com/distributed_lab/dig"
 	"gitlab.com/distributed_lab/figure/v3"
 	"gitlab.com/distributed_lab/kit/comfig"
 	"gitlab.com/distributed_lab/kit/kv"
@@ -84,7 +82,7 @@ func (e *ethereum) RelayerConfig() *RelayerConfig {
 
 		result.PrivateKey = networkConfig.PrivateKey
 		if result.PrivateKey == nil {
-			result.PrivateKey = extractPrivateKey(networkConfig.VaultAddress, networkConfig.VaultMountPath)
+			panic(errors.New("private_key is required in network config (vault support removed)"))
 		}
 
 		result.nonce, err = result.RPC.NonceAt(context.Background(), crypto.PubkeyToAddress(result.PrivateKey.PublicKey), nil)
@@ -132,46 +130,6 @@ func (n *RelayerConfig) ResetNonce(client *ethclient.Client) error {
 	}
 	n.nonce = nonce
 	return nil
-}
-
-func extractPrivateKey(vaultAddress, vaultMountPath string) *ecdsa.PrivateKey {
-	conf := vaultapi.DefaultConfig()
-	conf.Address = vaultAddress
-
-	vaultClient, err := vaultapi.NewClient(conf)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to initialize new client"))
-	}
-
-	token := struct {
-		Token string `dig:"VAULT_TOKEN,clear"`
-	}{}
-
-	err = dig.Out(&token).Now()
-	if err != nil {
-		panic(errors.Wrap(err, "failed to dig out token"))
-	}
-
-	vaultClient.SetToken(token.Token)
-
-	secret, err := vaultClient.KVv2(vaultMountPath).Get(context.Background(), "relayer")
-	if err != nil {
-		panic(errors.Wrap(err, "failed to get secret"))
-	}
-
-	vaultRelayerConf := struct {
-		PrivateKey *ecdsa.PrivateKey `fig:"private_key,required"`
-	}{}
-
-	if err := figure.
-		Out(&vaultRelayerConf).
-		With(figure.EthereumHooks).
-		From(secret.Data).
-		Please(); err != nil {
-		panic(errors.Wrap(err, "failed to figure out"))
-	}
-
-	return vaultRelayerConf.PrivateKey
 }
 
 func (w whitelist) IsPresent(address string) bool {

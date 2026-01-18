@@ -6,9 +6,7 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/ethereum/go-ethereum v1.13.11
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/hashicorp/vault/api v1.12.2
 	gitlab.com/distributed_lab/ape v1.7.1
-	gitlab.com/distributed_lab/dig v0.0.0-20230207152643-c44f80a4294c
 	gitlab.com/distributed_lab/figure/v3 v3.1.4
 	gitlab.com/distributed_lab/kit v1.11.3
 	gitlab.com/distributed_lab/logan v3.8.1+incompatible
@@ -86,3 +84,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
+
+replace github.com/tyler-smith/go-bip39 => github.com/distributed-lab/go-bip39 v1.1.0
