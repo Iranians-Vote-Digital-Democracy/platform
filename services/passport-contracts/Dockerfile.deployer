@@ -1,0 +1,20 @@
+# Dockerfile for contract deployment
+# Copies pre-compiled artifacts from host to avoid WASM issues on ARM
+
+FROM node:18-slim
+
+WORKDIR /app
+
+# Copy everything including pre-compiled artifacts
+COPY package*.json ./
+COPY hardhat.config.ts tsconfig.json ./
+COPY contracts/ ./contracts/
+COPY deploy/ ./deploy/
+COPY scripts/ ./scripts/
+COPY cache/ ./cache/
+COPY artifacts/ ./artifacts/
+
+RUN npm install --prefer-offline 2>/dev/null || npm install
+
+# Skip compilation with --no-compile flag
+CMD ["npx", "hardhat", "migrate", "--network", "localhost"]

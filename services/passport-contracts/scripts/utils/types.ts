@@ -35,6 +35,10 @@ export const C_ECDSA_BRAINPOOLP384R1_SHA384_512 = keccak256(["string"], ["C_ECDS
 export const C_ECDSA_BRAINPOOLP384R1_SHA384_768 = keccak256(["string"], ["C_ECDSA_BRAINPOOLP384R1_SHA384_768"]);
 export const C_ECDSA_BRAINPOOLP512R1_SHA512_1024 = keccak256(["string"], ["C_ECDSA_BRAINPOOLP512R1_SHA512_1024"]);
 
+// Cross-curve hybrid dispatcher: P512 signer (for signature verification) with P384 key extraction parameters
+// Used for German passports where CSCA uses brainpoolP512r1 but DS certificate has brainpoolP384r1 key
+export const C_ECDSA_BRAINPOOLP512R1_SHA512_768 = keccak256(["string"], ["C_ECDSA_BRAINPOOLP512R1_SHA512_768"]);
+
 // -------------------------- PASSPORT --------------------------
 
 export const P_NO_AA = keccak256(["string"], ["P_NO_AA"]);

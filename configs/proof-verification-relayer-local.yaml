@@ -1,5 +1,5 @@
 # Proof Verification Relayer Configuration - LOCAL HARDHAT
-# Points to local Hardhat node at http://host.docker.internal:8545
+# Points to local Hardhat container
 
 log:
   level: debug
@@ -17,9 +17,9 @@ vault:
   disabled: true
 
 network:
-  # Local Hardhat RPC
-  rpc: "http://host.docker.internal:8545"
-  gas_multiplier: 1.23
+  # Local Hardhat RPC (docker network hostname)
+  rpc: "http://hardhat:8545"
+  gas_multiplier: 1.2
 
   # Hardhat's first default account private key (Account #0)
   private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
@@ -29,24 +29,25 @@ contracts:
   voting_registry:
     address: null
   lightweight_state:
-    address: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"  # StateKeeper
+    address: "0x3949c97925e5Aa13e34ddb18EAbf0B70ABB0C7d4"  # StateKeeper
   register2:
-    address: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"  # Registration2
+    address: "0x9e7F7d0E8b8F38e3CF2b3F7dd362ba2e9E82baa4"  # Registration2
     block: 0
 
 # Voting V2 configuration (for BioPassportVoting)
 voting_v2:
   enable: true
-  rpc: "http://host.docker.internal:8545"
+  rpc: "http://hardhat:8545"
   private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-  proposal_state_address: "0x6212cb549De37c25071cF506aB7E115D140D9e42"  # ProposalsState
+  proposal_state_address: "0xf4AE7E15B1012edceD8103510eeB560a9343AFd3"  # ProposalsState (Proxy)
+  voting_contract_address: "0x97fd63D049089cd70D9D139ccf9338c81372DE68"  # BioPassportVoting (Proxy)
   block: 0
-  gas_limit: 800000
+  gas_limit: 8000000
   check_with_subscribe: false
 
 # State replicator configuration (local addresses)
 replicator:
-  address: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"  # StateKeeper
+  address: "0x3949c97925e5Aa13e34ddb18EAbf0B70ABB0C7d4"  # StateKeeper
   source_smt: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"  # RegistrationSMT
   root_prefix: "Rarimo root"
 
@@ -57,13 +58,12 @@ ipfs:
   min_abnormal_period: 2s
   max_abnormal_period: 8s
 
-# Event listener settings
+cop:
+  disabled: true
+
 pinger:
   blocks_distance: 10000
   timeout: 5s
   normal_period: 10s
   min_abnormal_period: 10s
   max_abnormal_period: 10s
-
-cop:
-  disabled: true

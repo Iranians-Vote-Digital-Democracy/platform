@@ -32,7 +32,7 @@ const config: HardhatUserConfig = {
       initialDate: "2004-01-01",
     },
     localhost: {
-      url: "http://127.0.0.1:8545",
+      url: process.env.LOCALHOST_URL || "http://127.0.0.1:8545",
       gasMultiplier: 1.2,
     },
     sepolia: {
@@ -82,6 +82,14 @@ const config: HardhatUserConfig = {
       },
       evmVersion: "london",
     },
+    // Use native solc if available (for Docker ARM environments)
+    compilers: process.env.SOLC_PATH ? [{
+      version: "0.8.28",
+      settings: {
+        optimizer: { enabled: true, runs: 200 },
+        evmVersion: "london",
+      },
+    }] : undefined,
   },
   etherscan: {
     apiKey: {

@@ -77,8 +77,21 @@ func Registration(w http.ResponseWriter, r *http.Request) {
 		Log(r).WithError(err).Error("failed to configure gas and gasPrice")
 		// `errors.Is` is not working for rpc errors, they passed as a string without additional wrapping
 		// because of this we operate with raw strings
-		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) {
-			errParts := strings.Split(err.Error(), ":")
+		errStr := strings.ToLower(err.Error())
+		// Check for any type of revert (Hardhat uses "Transaction reverted", geth uses "execution reverted")
+		isReverted := strings.Contains(errStr, strings.ToLower(vm.ErrExecutionReverted.Error())) ||
+			strings.Contains(errStr, "transaction reverted") ||
+			strings.Contains(errStr, "reverted with custom error")
+		if isReverted {
+			// Handle custom Solidity errors like KeyAlreadyExists(bytes32)
+			if strings.Contains(errStr, "keyalreadyexists") {
+				ape.RenderErr(w, problems.BadRequest(validation.Errors{
+					"certificate": errors.New("KeyAlreadyExists: certificate already registered"),
+				}.Filter())...)
+				return
+			}
+			// Handle standard revert messages like "Registration: invalid icao proof"
+			errParts := strings.Split(errStr, ":")
 			contractName := strings.TrimSpace(errParts[len(errParts)-2])
 			errMsg := errors.New(strings.TrimSpace(errParts[len(errParts)-1]))
 			ape.RenderErr(w, problems.BadRequest(validation.Errors{contractName: errMsg}.Filter())...)

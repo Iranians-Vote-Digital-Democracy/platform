@@ -163,6 +163,7 @@ import {
   C_ECDSA_BRAINPOOLP384R1_SHA384_512,
   C_ECDSA_BRAINPOOLP384R1_SHA384_768,
   C_ECDSA_BRAINPOOLP512R1_SHA512_1024,
+  C_ECDSA_BRAINPOOLP512R1_SHA512_768,
   P_ECDSA_SHA1_2704,
   P_NO_AA,
   P_RSA_SHA1_2688,
@@ -411,6 +412,11 @@ export = async (deployer: Deployer) => {
   const cEcdsaBrainpoolP512r11024Sha512Dispatcher = await deployer.deployed(
     CECDSADispatcher__factory,
     "CECDSADispatcher brainpoolP512r1 SHA512 128",
+  );
+  // Hybrid dispatcher for German passports: P512 signer with P384 key extraction
+  const cEcdsaHybridP512SigP384KeyDispatcher = await deployer.deployed(
+    CECDSADispatcher__factory,
+    "CECDSAHybridDispatcher brainpoolP512r1 P384Key 96",
   );
 
   // -------------------------- PASSPORT --------------------------
@@ -861,6 +867,11 @@ export = async (deployer: Deployer) => {
   await registration.mockAddCertificateDispatcher(
     C_ECDSA_BRAINPOOLP512R1_SHA512_1024,
     await cEcdsaBrainpoolP512r11024Sha512Dispatcher.getAddress(),
+  );
+  // Hybrid dispatcher for German passports: P512 signer with P384 key (768 bits)
+  await registration.mockAddCertificateDispatcher(
+    C_ECDSA_BRAINPOOLP512R1_SHA512_768,
+    await cEcdsaHybridP512SigP384KeyDispatcher.getAddress(),
   );
 
   // -------------------------- PASSPORT --------------------------

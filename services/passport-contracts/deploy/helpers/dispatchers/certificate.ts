@@ -70,6 +70,31 @@ export const deployCECDSADispatcher = async (
   await dispatcher.__CECDSADispatcher_init(await signer.getAddress(), keyLength, keyPrefix);
 };
 
+/**
+ * Deploy a hybrid ECDSA dispatcher for cross-curve certificate scenarios.
+ * This is used for German passports where:
+ * - CSCA (master) uses brainpoolP512r1 for signatures
+ * - DS certificate (slave) has brainpoolP384r1 public key
+ * 
+ * The dispatcher uses P512 signer for signature verification but P384 key extraction parameters.
+ */
+export const deployCECDSAHybridDispatcher = async (
+  deployer: Deployer,
+  signerCurve: "brainpoolP512r1",
+  keyLength: "96", // P384 key = 96 bytes
+  keyPrefix: string, // P384 BIT STRING prefix: "0x03620004"
+) => {
+  // Use P512 signer for signature verification
+  const signer = await deployECDSA512Signer(deployer, keyLength);
+
+  const dispatcher = await deployer.deploy(CECDSADispatcher__factory, {
+    name: `CECDSAHybridDispatcher ${signerCurve} P384Key ${keyLength}`,
+  });
+
+  // Initialize with P384 key parameters (keyLength=96, P384 prefix) but P512 signer
+  await dispatcher.__CECDSADispatcher_init(await signer.getAddress(), keyLength, keyPrefix);
+};
+
 const deployRSASigner = async (deployer: Deployer, hashfunc: string, exponent: string, keyLength: string) => {
   try {
     const result = await deployer.deployed(CRSASigner__factory, `CRSASigner ${hashfunc} ${exponent} ${keyLength}`);
