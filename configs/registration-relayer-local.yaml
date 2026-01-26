@@ -9,11 +9,10 @@ listener:
   addr: :8000
 
 network:
-  # Host Hardhat RPC (from Docker container: use host.docker.internal on macOS)
+  # Host Hardhat RPC - using host.docker.internal to reach host machine from Docker
   rpc: "http://host.docker.internal:8545"
 
-  # Registration2 PROXY address (NOT the implementation!)
-  # The proxy has stateKeeper set and dispatchers registered
+  # Registration2 PROXY address (from Jan 24, 2026 fresh deployment)
   registration: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
   
   # StateKeeper PROXY address  
@@ -26,7 +25,7 @@ network:
   # Gas settings
   gas_limit_multiplier: 1.2
 
-  # Whitelist of allowed destination contracts (PROXY addresses)
+  # Whitelist of allowed destination contracts (PROXY addresses from Jan 24 fresh deployment)
   whitelist:
     - "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"  # Registration2 Proxy
     - "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"  # CertificatesSMT Proxy

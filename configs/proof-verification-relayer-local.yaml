@@ -17,37 +17,37 @@ vault:
   disabled: true
 
 network:
-  # Local Hardhat RPC (docker network hostname)
-  rpc: "http://hardhat:8545"
+  # Local Hardhat RPC (host machine - Hardhat running via CLI)
+  rpc: "http://host.docker.internal:8545"
   gas_multiplier: 1.2
 
   # Hardhat's first default account private key (Account #0)
   private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
-# Smart contract addresses (deployed to local Hardhat)
+# Smart contract addresses (deployed to local Hardhat - January 23, 2026)
 contracts:
   voting_registry:
     address: null
   lightweight_state:
-    address: "0x3949c97925e5Aa13e34ddb18EAbf0B70ABB0C7d4"  # StateKeeper
+    address: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"  # StateKeeper
   register2:
-    address: "0x9e7F7d0E8b8F38e3CF2b3F7dd362ba2e9E82baa4"  # Registration2
+    address: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"  # Registration2
     block: 0
 
-# Voting V2 configuration (for BioPassportVoting)
+# Voting V2 configuration (for NoirIDVoting)
 voting_v2:
   enable: true
-  rpc: "http://hardhat:8545"
+  rpc: "http://host.docker.internal:8545"
   private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-  proposal_state_address: "0xf4AE7E15B1012edceD8103510eeB560a9343AFd3"  # ProposalsState (Proxy)
-  voting_contract_address: "0x97fd63D049089cd70D9D139ccf9338c81372DE68"  # BioPassportVoting (Proxy)
+  proposal_state_address: "0x447786d977Ea11Ad0600E193b2d07A06EfB53e5F"  # ProposalsState
+  voting_contract_address: "0xC6c5Ab5039373b0CBa7d0116d9ba7fb9831C3f42"  # NoirIDVoting
   block: 0
   gas_limit: 8000000
   check_with_subscribe: false
 
 # State replicator configuration (local addresses)
 replicator:
-  address: "0x3949c97925e5Aa13e34ddb18EAbf0B70ABB0C7d4"  # StateKeeper
+  address: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"  # StateKeeper
   source_smt: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"  # RegistrationSMT
   root_prefix: "Rarimo root"
 

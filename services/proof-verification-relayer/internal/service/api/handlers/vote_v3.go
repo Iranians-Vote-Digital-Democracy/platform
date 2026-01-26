@@ -100,12 +100,33 @@ func VoteV3(w http.ResponseWriter, r *http.Request) {
 	err = confGas(r, &txd, &votingAddress)
 	if err != nil {
 		log.WithError(err).Error("Failed to configure gas and gasPrice")
-		if strings.Contains(strings.ToLower(err.Error()), strings.ToLower(vm.ErrExecutionReverted.Error())) {
+		errLower := strings.ToLower(err.Error())
+		// Check for Geth-style revert errors
+		if strings.Contains(errLower, strings.ToLower(vm.ErrExecutionReverted.Error())) {
 			errParts := strings.Split(err.Error(), ":")
 			contractName := strings.TrimSpace(errParts[len(errParts)-2])
 			errMsg := errors.New(strings.TrimSpace(errParts[len(errParts)-1]))
 			ape.RenderErr(w, problems.BadRequest(validation.Errors{contractName: errMsg}.Filter())...)
 			return
+		}
+		// Check for Hardhat-style revert errors (VM Exception with reason string)
+		if strings.Contains(errLower, "reverted with reason string") {
+			// Extract the reason from the error message
+			// Format: "...reverted with reason string 'SparseMerkleTree: the key already exists'"
+			errStr := err.Error()
+			startIdx := strings.Index(errStr, "'")
+			endIdx := strings.LastIndex(errStr, "'")
+			if startIdx != -1 && endIdx != -1 && endIdx > startIdx {
+				revertReason := errStr[startIdx+1 : endIdx]
+				// Parse contract name and error from revert reason (format: "ContractName: error message")
+				parts := strings.SplitN(revertReason, ": ", 2)
+				if len(parts) == 2 {
+					ape.RenderErr(w, problems.BadRequest(validation.Errors{parts[0]: errors.New(parts[1])}.Filter())...)
+				} else {
+					ape.RenderErr(w, problems.BadRequest(validation.Errors{"contract": errors.New(revertReason)}.Filter())...)
+				}
+				return
+			}
 		}
 		ape.RenderErr(w, problems.InternalError())
 		return
