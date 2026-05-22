@@ -1,0 +1,18 @@
+{
+  "default_server_config": {
+    "m.homeserver": {
+      "base_url": "https://matrix.jomhoor.org",
+      "server_name": "jomhoor.org"
+    }
+  },
+  "disable_guests": true,
+  "disable_login_language_selector": true,
+  "brand": "Jomhoor",
+  "default_theme": "dark",
+  "features": {
+    "feature_spotlight": false
+  },
+  "room_directory": {
+    "servers": ["jomhoor.org"]
+  }
+}

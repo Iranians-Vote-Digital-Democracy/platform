@@ -2,6 +2,15 @@
 .env
 !.env.example
 
+# Matrix / Synapse / MAS runtime secrets — never commit the real files
+configs/synapse/homeserver.yaml
+configs/synapse/*.signing.key
+configs/synapse/*.log.config
+configs/mas/config.yaml
+# .example versions ARE committed (no secrets, just templates)
+!configs/synapse/homeserver.yaml.example
+!configs/mas/config.yaml.example
+
 # Node.js
 node_modules/
 npm-debug.log*

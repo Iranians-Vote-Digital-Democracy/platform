@@ -147,9 +147,86 @@ services:
     command: ["sso-svc migrate up && sso-svc run service"]
     restart: unless-stopped
 
+  # ============================================
+  # Matrix Postgres (Synapse + MAS databases)
+  # Port 5436 to avoid conflicts with existing postgres instances.
+  # Init script creates two databases: synapse, mas.
+  # ============================================
+
+  matrix-postgres:
+    image: postgres:15-alpine
+    container_name: matrix-postgres
+    environment:
+      POSTGRES_USER: matrix
+      POSTGRES_PASSWORD: ${MATRIX_POSTGRES_PASSWORD}
+      POSTGRES_DB: synapse   # default db; mas db created by init script
+    ports:
+      - "5436:5432"
+    volumes:
+      - matrix_postgres_data:/var/lib/postgresql/data
+      - ./deploy/init-matrix-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matrix -d synapse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # Synapse — Matrix homeserver
+  # Config: ./configs/synapse/homeserver.yaml (copy from .example, fill secrets)
+  # First-time setup: docker compose run --rm synapse generate
+  # ============================================
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: synapse
+    environment:
+      - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
+    volumes:
+      - ./configs/synapse:/data
+      - synapse_media_data:/data/media_store
+    depends_on:
+      matrix-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================
+  # Matrix Authentication Service (MAS)
+  # Bridges Synapse ↔ sso-svc (OIDC upstream).
+  # Config: ./configs/mas/config.yaml (copy from .example, fill secrets)
+  # First-time setup: docker compose run --rm mas config generate
+  # ============================================
+
+  mas:
+    image: ghcr.io/element-hq/matrix-authentication-service:latest
+    container_name: mas
+    volumes:
+      - ./configs/mas/config.yaml:/config.yaml:ro
+    command: ["server", "--config", "/config.yaml"]
+    depends_on:
+      matrix-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================
+  # Element Web — Matrix client (static files)
+  # Config: ./configs/element/config.json (committed, no secrets)
+  # No build needed — official Docker image.
+  # ============================================
+
+  element-web:
+    image: vectorim/element-web:latest
+    container_name: element-web
+    volumes:
+      - ./configs/element/config.json:/app/config.json:ro
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   sso_postgres_data:
+  matrix_postgres_data:
+  synapse_media_data:
 
 networks:
   default:

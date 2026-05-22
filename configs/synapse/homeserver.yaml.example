@@ -1,0 +1,83 @@
+# homeserver.yaml.example — Synapse configuration
+# Copy to homeserver.yaml and fill in secrets before running.
+# Generate with: docker compose run --rm synapse generate
+# (generates homeserver.yaml + signing key automatically)
+#
+# Reference: https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html
+
+server_name: "jomhoor.org"
+public_baseurl: "https://matrix.jomhoor.org"
+pid_file: /data/homeserver.pid
+
+# ─── Listeners ───────────────────────────────────────────────────────────────
+listeners:
+  - port: 8008
+    tls: false   # TLS terminated by nginx
+    type: http
+    x_forwarded: true
+    bind_addresses: ['::']
+    resources:
+      - names: [client, federation]
+        compress: false
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+database:
+  name: psycopg2
+  args:
+    user: matrix
+    password: FILL_IN_MATRIX_POSTGRES_PASSWORD
+    database: synapse
+    host: matrix-postgres
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+# ─── Media ────────────────────────────────────────────────────────────────────
+media_store_path: /data/media_store
+max_upload_size: 50M
+
+# ─── Logging ──────────────────────────────────────────────────────────────────
+log_config: "/data/jomhoor.org.log.config"
+
+# ─── Signing key ──────────────────────────────────────────────────────────────
+signing_key_path: "/data/jomhoor.org.signing.key"
+
+# ─── Registration ─────────────────────────────────────────────────────────────
+# Disable self-registration — all users come through MAS/SSO.
+enable_registration: false
+
+# ─── Federation ───────────────────────────────────────────────────────────────
+# Disabled — private community server.
+federation_domain_whitelist: []
+# Do NOT open port 8448 in nginx.
+
+# ─── MAS (Matrix Authentication Service) ─────────────────────────────────────
+# Delegates ALL authentication to MAS (OIDC native mode).
+# Reference: https://element-hq.github.io/matrix-authentication-service/setup/homeserver.html
+experimental_features:
+  msc3861:
+    enabled: true
+    issuer: https://mas.jomhoor.org/
+    # Must match the client registered in MAS config (synapse client).
+    client_id: FILL_IN_SYNAPSE_CLIENT_ID_FROM_MAS_CONFIG
+    client_auth_method: client_secret_basic
+    client_secret: FILL_IN_SYNAPSE_CLIENT_SECRET_FROM_MAS_CONFIG
+    admin_token: FILL_IN_MAS_ADMIN_TOKEN
+
+# ─── Presence ─────────────────────────────────────────────────────────────────
+# Disable to reduce RAM/CPU on small server.
+presence:
+  enabled: false
+
+# ─── URL Previews ─────────────────────────────────────────────────────────────
+# Disable to reduce RAM/CPU; enable if users want link previews.
+url_preview_enabled: false
+
+# ─── Retention ────────────────────────────────────────────────────────────────
+# Purge remote media after 90 days to keep disk bounded.
+media_retention:
+  remote_media_lifetime: 90d
+
+# ─── Admin API ────────────────────────────────────────────────────────────────
+# Used by sso-svc post-exchange hook to join users to rooms.
+# Admin token set via the shared_secret_authenticator module or MAS admin_token.

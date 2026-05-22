@@ -1,0 +1,70 @@
+# config.yaml.example — Matrix Authentication Service (MAS) configuration
+# Copy to config.yaml and fill in secrets before running.
+# Generate encryption secrets with: openssl rand -hex 32
+#
+# Reference: https://element-hq.github.io/matrix-authentication-service/reference/configuration.html
+
+# ─── HTTP ─────────────────────────────────────────────────────────────────────
+http:
+  public_base: https://mas.jomhoor.org
+  issuer: https://mas.jomhoor.org/
+  listeners:
+    - name: web
+      resources:
+        - name: discovery
+        - name: human
+        - name: oauth
+        - name: compat
+        - name: graphql
+        - name: assets
+      binds:
+        - address: "0.0.0.0:8080"
+      proxy_protocol: false
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+database:
+  uri: postgresql://matrix:FILL_IN_MATRIX_POSTGRES_PASSWORD@matrix-postgres/mas
+
+# ─── Secrets (generate all with: openssl rand -hex 32) ───────────────────────
+secrets:
+  encryption: FILL_IN_32_BYTE_HEX_SECRET
+  keys:
+    - kid: "k1"
+      key: |
+        FILL_IN_RSA_PRIVATE_KEY_PEM
+        # Generate: openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt
+
+# ─── Synapse homeserver connection ────────────────────────────────────────────
+# MAS talks to Synapse admin API to provision users.
+matrix:
+  homeserver: jomhoor.org
+  secret: FILL_IN_SYNAPSE_CLIENT_SECRET  # same value as homeserver.yaml client_secret
+  endpoint: http://synapse:8008
+
+# ─── Upstream OAuth2 provider (sso-svc) ───────────────────────────────────────
+# This is the OIDC client MAS uses to authenticate users via Jomhoor wallet.
+upstream_oauth2:
+  providers:
+    - id: jomhoor-sso
+      issuer: https://sso.jomhoor.org
+      client_id: matrix-mas
+      client_secret: FILL_IN_SSO_CLIENT_SECRET  # bcrypt-hash this value in sso_clients table
+      scope: "openid profile"
+      token_endpoint_auth_method: client_secret_basic
+      claims_imports:
+        sub:
+          template: "{{ user.sub }}"
+        localpart:
+          # sso-svc exposes matrix_localpart as a custom claim in the ID token.
+          # This is the deterministic, collision-resistant localpart for this wallet.
+          template: "{{ user.matrix_localpart }}"
+        displayname:
+          action: ignore
+
+# ─── Email (disabled — wallet-based auth, no email needed) ────────────────────
+email:
+  transport: blackhole
+
+# ─── Passwords (disabled — users authenticate via wallet, not password) ───────
+passwords:
+  enabled: false
