@@ -183,6 +183,8 @@ services:
     container_name: synapse
     environment:
       - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
+    ports:
+      - "127.0.0.1:8008:8008"
     volumes:
       - ./configs/synapse:/data
       - synapse_media_data:/data/media_store
@@ -201,6 +203,8 @@ services:
   mas:
     image: ghcr.io/element-hq/matrix-authentication-service:latest
     container_name: mas
+    ports:
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./configs/mas/config.yaml:/config.yaml:ro
     command: ["server", "--config", "/config.yaml"]
@@ -218,6 +222,8 @@ services:
   element-web:
     image: vectorim/element-web:latest
     container_name: element-web
+    ports:
+      - "127.0.0.1:8081:80"
     volumes:
       - ./configs/element/config.json:/app/config.json:ro
     restart: unless-stopped
