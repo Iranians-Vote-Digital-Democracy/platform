@@ -50,22 +50,33 @@ for domain in matrix.jomhoor.org mas.jomhoor.org element.jomhoor.org; do
   fi
 done
 
-# Temporarily serve HTTP only so certbot can do ACME challenge
-# Our vhosts already have the ACME location block; nginx must be running first
+# nginx -t fails if the ssl_certificate files referenced in our vhosts don't
+# exist yet.  Create temporary self-signed placeholders so nginx can load,
+# serve the ACME challenge, and then certbot can replace them with real certs.
+for domain in matrix.jomhoor.org mas.jomhoor.org element.jomhoor.org; do
+  cert_dir="/etc/letsencrypt/live/$domain"
+  if [ ! -f "$cert_dir/fullchain.pem" ]; then
+    echo "  → creating dummy cert for $domain so nginx can start"
+    mkdir -p "$cert_dir"
+    openssl req -x509 -nodes -newkey rsa:2048 \
+      -keyout "$cert_dir/privkey.pem" \
+      -out    "$cert_dir/fullchain.pem" \
+      -days 1 -subj "/CN=$domain" 2>/dev/null
+  fi
+done
+
+# Now nginx can test and load with the dummy certs
 nginx -t
 systemctl reload nginx
 
-# Issue/expand cert
+# Run certbot — it issues real certs and rewrites privkey/fullchain in-place
 certbot certonly --nginx \
   -d matrix.jomhoor.org \
   -d mas.jomhoor.org \
   -d element.jomhoor.org \
   --non-interactive --agree-tos --email admin@jomhoor.org
 
-echo "=== 5/7  Enable HTTPS blocks in vhosts (uncomment ssl_certificate lines) ==="
-# The conf files already have the correct ssl_certificate paths for Let's Encrypt.
-# Certbot --nginx rewrites them automatically, so this step is a no-op if you
-# used --nginx above.  Just reload to apply.
+echo "=== 5/7  Reload nginx with real certs ==="
 nginx -t && systemctl reload nginx
 echo "  → nginx reloaded with TLS"
 
