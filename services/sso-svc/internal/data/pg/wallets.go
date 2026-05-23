@@ -66,3 +66,27 @@ func (q *walletsQ) GetByAddress(walletAddress string) (*data.Wallet, error) {
 	}
 	return &w, nil
 }
+
+// IsBannedByID returns true when wallets.banned_at IS NOT NULL for the given
+// id. Missing row → false (not an error): the ban middleware should be a
+// gate on existing wallets, not a presence check.
+func (q *walletsQ) IsBannedByID(walletID string) (bool, error) {
+	query, args, err := sq.
+		Select("banned_at IS NOT NULL").
+		From(walletsTable).
+		Where(sq.Eq{"id": walletID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return false, errors.Wrap(err, "build select banned_at sql")
+	}
+
+	var banned bool
+	if err := q.db.QueryRow(query, args...).Scan(&banned); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "scan banned_at")
+	}
+	return banned, nil
+}

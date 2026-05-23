@@ -56,6 +56,16 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	state := q.Get("state")
 	codeChallenge := q.Get("code_challenge")
 	method := q.Get("code_challenge_method")
+	// `nonce` is the optional OIDC Core 1.0 §3.1.2.1 replay-protection nonce.
+	// Non-OIDC RPs (Taraaz, difcongress) omit it and that's fine; only OIDC-
+	// aware RPs (MAS, Element) populate it, in which case we echo it back in
+	// the ID token at /v1/tokens/exchange time.
+	oidcNonce := q.Get("nonce")
+	// `scope` is the OIDC Core 1.0 §3.1.2.1 scope param. Presence of `openid`
+	// signals an OIDC flow and toggles ID token issuance at exchange time;
+	// absent / non-openid scopes get the plain OAuth2 access+refresh response
+	// (back-compat with Taraaz, difcongress).
+	scope := q.Get("scope")
 
 	if clientID == "" || redirectURI == "" || state == "" || codeChallenge == "" {
 		ape.RenderErr(w, problems.BadRequest(
@@ -102,10 +112,26 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 		RedirectURI:   redirectURI,
 		State:         state,
 		CodeChallenge: codeChallenge,
+		OIDCNonce:     oidcNonce,
+		Scope:         scope,
 		ExpiresAt:     expiresAt,
 	}); err != nil {
 		Log(r).WithError(err).Error("insert sso challenge")
 		ape.RenderErr(w, problems.InternalError())
+		return
+	}
+
+	// OIDC Core 1.0 §3.1.2.1 allows extension `display` values. We use
+	// `display=qr` as an opt-in for the cross-device flow (Phase 1.9) — the
+	// browser stays on sso-svc and renders a QR + polling page instead of
+	// 302'ing to a wallet that isn't on this device. Same-device clients
+	// (Taraaz, difcongress, mobile-first MAS flows) omit it and get the
+	// existing behaviour.
+	if q.Get("display") == "qr" {
+		if err := renderQRPage(w, r, nonce, clientID, redirectURI, state); err != nil {
+			Log(r).WithError(err).Error("render qr page")
+			ape.RenderErr(w, problems.InternalError())
+		}
 		return
 	}
 
@@ -286,6 +312,8 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 		ClientID:        client.ID,
 		PairwiseSubject: subject,
 		CodeChallenge:   challenge.CodeChallenge,
+		OIDCNonce:       challenge.OIDCNonce,
+		Scope:           challenge.Scope,
 		ExpiresAt:       time.Now().UTC().Add(authCodeTTL),
 	}); err != nil {
 		Log(r).WithError(err).Error("insert auth code")

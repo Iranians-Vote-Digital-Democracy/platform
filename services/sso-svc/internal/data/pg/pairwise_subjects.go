@@ -50,7 +50,7 @@ func (q *pairwiseQ) Upsert(ps data.PairwiseSubject) (data.PairwiseSubject, error
 
 func (q *pairwiseQ) GetBySubject(subject string) (*data.PairwiseSubject, error) {
 	query, args, err := sq.
-		Select("id", "wallet_id", "client_id", "subject", "created_at").
+		Select("id", "wallet_id", "client_id", "subject", "COALESCE(matrix_localpart, '')", "created_at").
 		From(pairwiseTable).
 		Where(sq.Eq{"subject": subject}).
 		PlaceholderFormat(sq.Dollar).
@@ -61,7 +61,7 @@ func (q *pairwiseQ) GetBySubject(subject string) (*data.PairwiseSubject, error) 
 
 	var ps data.PairwiseSubject
 	row := q.db.QueryRow(query, args...)
-	if err := row.Scan(&ps.ID, &ps.WalletID, &ps.ClientID, &ps.Subject, &ps.CreatedAt); err != nil {
+	if err := row.Scan(&ps.ID, &ps.WalletID, &ps.ClientID, &ps.Subject, &ps.MatrixLocalpart, &ps.CreatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
@@ -72,7 +72,7 @@ func (q *pairwiseQ) GetBySubject(subject string) (*data.PairwiseSubject, error) 
 
 func (q *pairwiseQ) GetByWalletAndClient(walletID, clientID string) (data.PairwiseSubject, error) {
 	query, args, err := sq.
-		Select("id", "wallet_id", "client_id", "subject", "created_at").
+		Select("id", "wallet_id", "client_id", "subject", "COALESCE(matrix_localpart, '')", "created_at").
 		From(pairwiseTable).
 		Where(sq.And{
 			sq.Eq{"wallet_id": walletID},
@@ -86,7 +86,7 @@ func (q *pairwiseQ) GetByWalletAndClient(walletID, clientID string) (data.Pairwi
 
 	var ps data.PairwiseSubject
 	row := q.db.QueryRow(query, args...)
-	if err := row.Scan(&ps.ID, &ps.WalletID, &ps.ClientID, &ps.Subject, &ps.CreatedAt); err != nil {
+	if err := row.Scan(&ps.ID, &ps.WalletID, &ps.ClientID, &ps.Subject, &ps.MatrixLocalpart, &ps.CreatedAt); err != nil {
 		return data.PairwiseSubject{}, errors.Wrap(err, "scan pairwise subject row by wallet+client")
 	}
 	return ps, nil

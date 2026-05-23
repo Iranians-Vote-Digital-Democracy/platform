@@ -9,6 +9,7 @@ import (
 	"github.com/jomhoor/sso-svc/internal/data/pg"
 	"github.com/jomhoor/sso-svc/internal/deeplink"
 	"github.com/jomhoor/sso-svc/internal/jwt"
+	"github.com/jomhoor/sso-svc/internal/oidc"
 	"github.com/jomhoor/sso-svc/internal/pairwise"
 	"github.com/jomhoor/sso-svc/internal/zkp"
 	"gitlab.com/distributed_lab/logan/v3"
@@ -19,6 +20,7 @@ type ctxKey int
 const (
 	logCtxKey ctxKey = iota
 	jwtCtxKey
+	oidcCtxKey
 	claimCtxKey
 	pairwiseCtxKey
 	attestationCtxKey
@@ -39,6 +41,12 @@ func CtxLog(entry *logan.Entry) func(context.Context) context.Context {
 func CtxJWT(issuer *jwt.JWTIssuer) func(context.Context) context.Context {
 	return func(ctx context.Context) context.Context {
 		return context.WithValue(ctx, jwtCtxKey, issuer)
+	}
+}
+
+func CtxOIDC(cfg *oidc.Config) func(context.Context) context.Context {
+	return func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, oidcCtxKey, cfg)
 	}
 }
 
@@ -92,6 +100,10 @@ func Log(r *http.Request) *logan.Entry {
 
 func JWT(r *http.Request) *jwt.JWTIssuer {
 	return r.Context().Value(jwtCtxKey).(*jwt.JWTIssuer)
+}
+
+func OIDC(r *http.Request) *oidc.Config {
+	return r.Context().Value(oidcCtxKey).(*oidc.Config)
 }
 
 func Claim(r *http.Request) *jwt.AuthClaim {

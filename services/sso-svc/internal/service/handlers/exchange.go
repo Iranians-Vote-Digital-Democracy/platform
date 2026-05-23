@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jomhoor/sso-svc/internal/jwt"
@@ -29,8 +30,11 @@ type exchangeRequest struct {
 type exchangeResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+	// IDToken is populated only for OIDC flows (scope contains `openid`).
+	// Omitted from the JSON body otherwise to keep the OAuth2 happy-path lean.
+	IDToken string `json:"id_token,omitempty"`
 	// ExpiresIn is seconds until the access token expires (informational).
-	ExpiresIn int `json:"expires_in"`
+	ExpiresIn int    `json:"expires_in"`
 	TokenType string `json:"token_type"`
 }
 
@@ -135,6 +139,46 @@ func Exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 5b. ID token — OIDC only. Emitted iff the original /v1/authorize call
+	// carried `openid` in its scope. Trust signals (zk_verified) and the
+	// optional matrix_localpart are fetched live from the DB so a revoked
+	// assertion is reflected on the very next sign-in.
+	var idToken string
+	if scopeHasOpenID(code.Scope) {
+		extra := map[string]any{
+			"iss":   OIDC(r).IssuerURL(),
+			"aud":   code.ClientID,
+			"nonce": code.OIDCNonce,
+		}
+
+		ps, err := db.PairwiseSubjects().GetBySubject(code.PairwiseSubject)
+		if err != nil {
+			Log(r).WithError(err).Warn("exchange: lookup pairwise subject for id_token")
+		} else if ps != nil {
+			if ps.MatrixLocalpart != "" {
+				extra["matrix_localpart"] = ps.MatrixLocalpart
+			}
+			assertion, err := db.Assertions().GetByWalletAndType(ps.WalletID, "zk_verified")
+			if err != nil {
+				Log(r).WithError(err).Warn("exchange: lookup zk_verified assertion for id_token")
+			} else if assertion != nil && assertion.Status {
+				extra["zk_verified"] = true
+			}
+		}
+
+		idClaim := &jwt.AuthClaim{
+			Subject:  code.PairwiseSubject,
+			ClientID: code.ClientID,
+			Type:     jwt.IDTokenType,
+		}
+		idToken, _, err = issuer.IssueIDToken(idClaim, extra)
+		if err != nil {
+			Log(r).WithError(err).Error("issue id_token")
+			ape.RenderErr(w, problems.InternalError())
+			return
+		}
+	}
+
 	expiresIn := int(time.Until(exp).Seconds())
 	if expiresIn < 0 {
 		expiresIn = 0
@@ -147,6 +191,7 @@ func Exchange(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(exchangeResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		IDToken:      idToken,
 		ExpiresIn:    expiresIn,
 		TokenType:    "Bearer",
 	}); err != nil {
@@ -161,6 +206,18 @@ func safePrefix(s string) string {
 		return s[:12]
 	}
 	return s
+}
+
+// scopeHasOpenID reports whether the OAuth2 scope string contains the
+// `openid` token. Scope is a space-separated list (OIDC Core 1.0 §3.1.2.1);
+// we tokenise rather than substring-match so `foopenid` doesn't qualify.
+func scopeHasOpenID(scope string) bool {
+	for _, s := range strings.Fields(scope) {
+		if s == "openid" {
+			return true
+		}
+	}
+	return false
 }
 
 // Validate handles GET /v1/tokens/validate?token=<jwt>

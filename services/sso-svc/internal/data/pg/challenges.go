@@ -22,8 +22,8 @@ func (d *DB) Challenges() data.SSOChallengesQ {
 func (q *challengesQ) Insert(c data.SSOChallenge) error {
 	query, args, err := sq.
 		Insert(challengesTable).
-		Columns("nonce", "client_id", "redirect_uri", "state", "code_challenge", "expires_at").
-		Values(c.Nonce, c.ClientID, c.RedirectURI, c.State, c.CodeChallenge, c.ExpiresAt).
+		Columns("nonce", "client_id", "redirect_uri", "state", "code_challenge", "oidc_nonce", "scope", "expires_at").
+		Values(c.Nonce, c.ClientID, c.RedirectURI, c.State, c.CodeChallenge, nullIfEmpty(c.OIDCNonce), nullIfEmpty(c.Scope), c.ExpiresAt).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -45,7 +45,7 @@ func (q *challengesQ) Consume(nonce string) (*data.SSOChallenge, error) {
 			sq.Eq{"used": false},
 			sq.Gt{"expires_at": time.Now().UTC()},
 		}).
-		Suffix("RETURNING nonce, client_id, redirect_uri, state, code_challenge, expires_at, used").
+		Suffix("RETURNING nonce, client_id, redirect_uri, state, code_challenge, COALESCE(oidc_nonce, ''), COALESCE(scope, ''), expires_at, used").
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -54,7 +54,7 @@ func (q *challengesQ) Consume(nonce string) (*data.SSOChallenge, error) {
 
 	var c data.SSOChallenge
 	row := q.db.QueryRow(query, args...)
-	if err := row.Scan(&c.Nonce, &c.ClientID, &c.RedirectURI, &c.State, &c.CodeChallenge, &c.ExpiresAt, &c.Used); err != nil {
+	if err := row.Scan(&c.Nonce, &c.ClientID, &c.RedirectURI, &c.State, &c.CodeChallenge, &c.OIDCNonce, &c.Scope, &c.ExpiresAt, &c.Used); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}

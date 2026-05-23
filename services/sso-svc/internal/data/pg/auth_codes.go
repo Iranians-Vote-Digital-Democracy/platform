@@ -22,8 +22,8 @@ func (d *DB) AuthCodes() data.AuthCodesQ {
 func (q *authCodesQ) Insert(c data.AuthCode) error {
 	query, args, err := sq.
 		Insert(authCodesTable).
-		Columns("code", "client_id", "pairwise_subject", "code_challenge", "expires_at").
-		Values(c.Code, c.ClientID, c.PairwiseSubject, c.CodeChallenge, c.ExpiresAt).
+		Columns("code", "client_id", "pairwise_subject", "code_challenge", "oidc_nonce", "scope", "expires_at").
+		Values(c.Code, c.ClientID, c.PairwiseSubject, c.CodeChallenge, nullIfEmpty(c.OIDCNonce), nullIfEmpty(c.Scope), c.ExpiresAt).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -47,7 +47,7 @@ func (q *authCodesQ) Consume(code string) (*data.AuthCode, error) {
 			sq.Eq{"used": false},
 			sq.Gt{"expires_at": time.Now().UTC()},
 		}).
-		Suffix("RETURNING code, client_id, pairwise_subject, code_challenge, expires_at, used, created_at").
+		Suffix("RETURNING code, client_id, pairwise_subject, code_challenge, COALESCE(oidc_nonce, ''), COALESCE(scope, ''), expires_at, used, created_at").
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -57,7 +57,7 @@ func (q *authCodesQ) Consume(code string) (*data.AuthCode, error) {
 	var c data.AuthCode
 	row := q.db.QueryRow(query, args...)
 	if err := row.Scan(
-		&c.Code, &c.ClientID, &c.PairwiseSubject, &c.CodeChallenge,
+		&c.Code, &c.ClientID, &c.PairwiseSubject, &c.CodeChallenge, &c.OIDCNonce, &c.Scope,
 		&c.ExpiresAt, &c.Used, &c.CreatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

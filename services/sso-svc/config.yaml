@@ -8,8 +8,28 @@ listener:
 db:
   url: ${SSO_DB_URL}
 
+# OIDC provider metadata (Phase 1.2). `issuer` MUST exactly match the public
+# HTTPS origin that relying parties trust — it goes into the iss claim of
+# every ID token and into the .well-known/openid-configuration document. RPs
+# do exact string comparison, so include scheme and never a trailing slash.
+oidc:
+  issuer: ${SSO_OIDC_ISSUER}
+
 jwt:
-  secret_key: ${SSO_JWT_SECRET}
+  # RS256 signing keys (Phase 1.1). Public counterparts are exposed at
+  # /.well-known/jwks.json so relying parties can verify tokens without a
+  # shared secret. Two keypairs are supported: `current` signs every new
+  # token; `previous` is accepted for verification only during a rotation
+  # window. ParseRSAPrivateKey accepts PEM literals, PEM with "\n" escapes,
+  # and base64-encoded PEM — pick whatever fits your secret manager.
+  #
+  # Generate a new keypair with:
+  #   scripts/generate-jwt-keypair.sh <kid>
+  current_kid: ${SSO_JWT_CURRENT_KID}
+  current_private_key: ${SSO_JWT_CURRENT_PRIVATE_KEY}
+  # Both previous_* fields are optional. Leave blank outside of rotation.
+  previous_kid: ${SSO_JWT_PREVIOUS_KID}
+  previous_private_key: ${SSO_JWT_PREVIOUS_PRIVATE_KEY}
   access_expiration_time: 1h
   refresh_expiration_time: 24h
 

@@ -18,6 +18,7 @@ func (s *service) router() chi.Router {
 		ape.CtxMiddleware(
 			handlers.CtxLog(s.log),
 			handlers.CtxJWT(s.jwt),
+			handlers.CtxOIDC(s.oidc),
 			handlers.CtxPairwise(s.pairwise),
 			handlers.CtxAttestation(s.attestation),
 			handlers.CtxCookies(s.cookies),
@@ -35,6 +36,12 @@ func (s *service) router() chi.Router {
 	// on every app install without any credentials.
 	r.Get("/.well-known/apple-app-site-association", handlers.AppleAppSiteAssociation)
 	r.Get("/.well-known/assetlinks.json", handlers.AssetLinks)
+
+	// OIDC provider metadata (Phase 1.2 / 1.3). Public, cacheable, CORS-open.
+	// RPs fetch these once to discover endpoints and verification keys; no
+	// secrets are exposed.
+	r.Get("/.well-known/openid-configuration", handlers.OIDCDiscovery)
+	r.Get("/.well-known/jwks.json", handlers.JWKS)
 
 	// Deep-link target for the SSO flow. iOS Universal Link interception is the
 	// primary path (app opens before the browser makes a network request).
@@ -59,6 +66,12 @@ func (s *service) router() chi.Router {
 		r.Post("/authorize/verify", handlers.Verify)
 		r.Post("/tokens/exchange", handlers.Exchange)
 
+		// Phase 1.9 desktop cross-device QR rendezvous. The page (qr) is
+		// served from /v1/authorize when display=qr; these two endpoints are
+		// the rendezvous itself: the desktop polls, the wallet binds.
+		r.Get("/authorize/qr/poll", handlers.QRPoll)
+		r.Post("/authorize/qr/complete", handlers.QRComplete)
+
 		// Public client metadata for consent screen (M4)
 		r.Get("/clients/{id}", handlers.GetClient)
 
@@ -73,11 +86,16 @@ func (s *service) router() chi.Router {
 		r.Get("/wallets/{address}/assertions/zk", handlers.GetZKAssertionStatus)
 
 		// Token introspection (M3)
-		r.With(middleware.AuthMiddleware(s.jwt, s.log, jwt.AccessTokenType)).
+		r.With(middleware.AuthMiddleware(s.jwt, s.log, jwt.AccessTokenType), middleware.BanMiddleware()).
 			Get("/tokens/validate", handlers.Validate)
 
+		// OIDC UserInfo (Phase 1.6). Bearer access token; returns the live
+		// claim shape (sub/iss/client_id + optional zk_verified, matrix_localpart).
+		r.With(middleware.AuthMiddleware(s.jwt, s.log, jwt.AccessTokenType), middleware.BanMiddleware()).
+			Get("/userinfo", handlers.UserInfo)
+
 		// Token refresh
-		r.With(middleware.AuthMiddleware(s.jwt, s.log, jwt.RefreshTokenType)).
+		r.With(middleware.AuthMiddleware(s.jwt, s.log, jwt.RefreshTokenType), middleware.BanMiddleware()).
 			Post("/tokens/refresh", handlers.Refresh)
 	})
 

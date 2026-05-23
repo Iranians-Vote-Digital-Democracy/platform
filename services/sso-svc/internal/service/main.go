@@ -10,6 +10,7 @@ import (
 	"github.com/jomhoor/sso-svc/internal/data/pg"
 	"github.com/jomhoor/sso-svc/internal/deeplink"
 	"github.com/jomhoor/sso-svc/internal/jwt"
+	"github.com/jomhoor/sso-svc/internal/oidc"
 	"github.com/jomhoor/sso-svc/internal/pairwise"
 	"github.com/jomhoor/sso-svc/internal/zkp"
 	"gitlab.com/distributed_lab/logan/v3"
@@ -19,6 +20,7 @@ type service struct {
 	log         *logan.Entry
 	listener    net.Listener
 	jwt         *jwt.JWTIssuer
+	oidc        *oidc.Config
 	pairwise    *pairwise.Deriver
 	attestation *attestation.Config
 	cookies     *cookies.Cookies
@@ -38,6 +40,7 @@ func newService(cfg config.Config) *service {
 		log:         cfg.Log(),
 		listener:    cfg.Listener(),
 		jwt:         cfg.JWT(),
+		oidc:        cfg.OIDC(),
 		pairwise:    cfg.Pairwise(),
 		attestation: cfg.Attestation(),
 		cookies:     cfg.Cookies(),

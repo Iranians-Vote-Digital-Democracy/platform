@@ -1,7 +1,6 @@
 package jwt
 
 import (
-	"encoding/hex"
 	"strings"
 	"time"
 
@@ -24,19 +23,22 @@ func NewJwter(getter kv.Getter) Jwter {
 	return &jwter{getter: getter}
 }
 
+// jwtConfig is the YAML shape under the top-level `jwt:` key.
+//
+// As of Phase 1.1 we use RS256 with a current + optional previous keypair.
+// Keys are PEM-encoded RSA private keys, supplied either inline (with the
+// YAML `|` block scalar) or via env-var substitution. ParseRSAPrivateKey
+// transparently accepts base64 and "\n"-escaped PEM, so any secret manager
+// will work.
 type jwtConfig struct {
-	SecretKey             string        `fig:"secret_key,required"`
+	CurrentKID        string `fig:"current_kid,required"`
+	CurrentPrivateKey string `fig:"current_private_key,required"`
+	// Previous key is optional — only set during a key rotation window.
+	PreviousKID        string `fig:"previous_kid"`
+	PreviousPrivateKey string `fig:"previous_private_key"`
+
 	AccessExpirationTime  time.Duration `fig:"access_expiration_time,required"`
 	RefreshExpirationTime time.Duration `fig:"refresh_expiration_time,required"`
-}
-
-func mustDecodeHex(s string) []byte {
-	s = strings.TrimPrefix(s, "0x")
-	b, err := hex.DecodeString(s)
-	if err != nil {
-		panic(errors.WithMessage(err, "failed to decode hex secret key"))
-	}
-	return b
 }
 
 func (j *jwter) JWT() *JWTIssuer {
@@ -46,10 +48,35 @@ func (j *jwter) JWT() *JWTIssuer {
 			panic(errors.WithMessage(err, "failed to figure out jwt config"))
 		}
 
-		return &JWTIssuer{
-			prv:               mustDecodeHex(cfg.SecretKey),
+		current, err := ParseRSAPrivateKey(cfg.CurrentPrivateKey)
+		if err != nil {
+			panic(errors.WithMessage(err, "parse current_private_key"))
+		}
+
+		issuer := &JWTIssuer{
+			current:           Keypair{KID: cfg.CurrentKID, Private: current},
 			accessExpiration:  cfg.AccessExpirationTime,
 			refreshExpiration: cfg.RefreshExpirationTime,
 		}
+
+		// Previous keypair is fully optional. Both kid and key must be present
+		// to be considered configured; either alone is a config error.
+		hasPrevKID := strings.TrimSpace(cfg.PreviousKID) != ""
+		hasPrevKey := strings.TrimSpace(cfg.PreviousPrivateKey) != ""
+		switch {
+		case hasPrevKID && hasPrevKey:
+			prev, err := ParseRSAPrivateKey(cfg.PreviousPrivateKey)
+			if err != nil {
+				panic(errors.WithMessage(err, "parse previous_private_key"))
+			}
+			if cfg.PreviousKID == cfg.CurrentKID {
+				panic(errors.New("previous_kid must differ from current_kid"))
+			}
+			issuer.previous = &Keypair{KID: cfg.PreviousKID, Private: prev}
+		case hasPrevKID || hasPrevKey:
+			panic(errors.New("previous_kid and previous_private_key must both be set or both omitted"))
+		}
+
+		return issuer
 	}).(*JWTIssuer)
 }

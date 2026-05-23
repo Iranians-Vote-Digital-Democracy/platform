@@ -6,6 +6,7 @@ import (
 	"github.com/jomhoor/sso-svc/internal/data/pg"
 	"github.com/jomhoor/sso-svc/internal/deeplink"
 	"github.com/jomhoor/sso-svc/internal/jwt"
+	"github.com/jomhoor/sso-svc/internal/oidc"
 	"github.com/jomhoor/sso-svc/internal/pairwise"
 	"github.com/jomhoor/sso-svc/internal/zkp"
 	"gitlab.com/distributed_lab/kit/comfig"
@@ -16,6 +17,7 @@ type Config interface {
 	comfig.Logger
 	comfig.Listenerer
 	jwt.Jwter
+	oidc.Oidcer
 	pairwise.Pairwiser
 	attestation.Attestationer
 	cookies.Cookier
@@ -28,6 +30,7 @@ type config struct {
 	comfig.Logger
 	comfig.Listenerer
 	jwt.Jwter
+	oidc.Oidcer
 	pairwise.Pairwiser
 	attestation.Attestationer
 	cookies.Cookier
@@ -43,6 +46,7 @@ func New(getter kv.Getter) Config {
 		Listenerer:    comfig.NewListenerer(getter),
 		Logger:        comfig.NewLogger(getter, comfig.LoggerOpts{}),
 		Jwter:         jwt.NewJwter(getter),
+		Oidcer:        oidc.NewOidcer(getter),
 		Pairwiser:     pairwise.NewPairwiser(getter),
 		Attestationer: attestation.NewAttestationer(getter),
 		Cookier:       cookies.NewCookier(getter),

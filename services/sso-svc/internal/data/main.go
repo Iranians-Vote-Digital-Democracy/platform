@@ -43,7 +43,11 @@ type PairwiseSubject struct {
 	WalletID  string    `db:"wallet_id"`
 	ClientID  string    `db:"client_id"`
 	Subject   string    `db:"subject"`
-	CreatedAt time.Time `db:"created_at"`
+	// MatrixLocalpart is the optional Matrix Authentication Service localpart
+	// claim — set lazily by MAS provisioning, never derived here. Empty for
+	// non-Matrix clients.
+	MatrixLocalpart string    `db:"matrix_localpart"`
+	CreatedAt       time.Time `db:"created_at"`
 }
 
 type SSOClient struct {
@@ -62,8 +66,15 @@ type SSOChallenge struct {
 	RedirectURI   string    `db:"redirect_uri"`
 	State         string    `db:"state"`
 	CodeChallenge string    `db:"code_challenge"`
-	ExpiresAt     time.Time `db:"expires_at"`
-	Used          bool      `db:"used"`
+	// OIDCNonce is the optional `nonce` parameter from OIDC Core 1.0 §3.1.2.1.
+	// NOT to be confused with the row's `Nonce` primary key, which is an
+	// internal session id.
+	OIDCNonce string `db:"oidc_nonce"`
+	// Scope is the raw space-separated `scope` request param from /v1/authorize.
+	// Presence of `openid` toggles ID token issuance at /v1/tokens/exchange.
+	Scope     string    `db:"scope"`
+	ExpiresAt time.Time `db:"expires_at"`
+	Used      bool      `db:"used"`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,6 +86,10 @@ type WalletsQ interface {
 	Insert(w Wallet) (Wallet, error)
 	// GetByAddress returns the wallet with the given walletAddress, or nil.
 	GetByAddress(walletAddress string) (*Wallet, error)
+	// IsBannedByID reports whether the wallet has a non-NULL banned_at
+	// timestamp. A non-existent wallet returns (false, nil) — ban is a
+	// soft-delete, not an identity check.
+	IsBannedByID(walletID string) (bool, error)
 }
 
 type AppCredentialsQ interface {
@@ -142,9 +157,15 @@ type AuthCode struct {
 	ClientID        string    `db:"client_id"`
 	PairwiseSubject string    `db:"pairwise_subject"`
 	CodeChallenge   string    `db:"code_challenge"`
-	ExpiresAt       time.Time `db:"expires_at"`
-	Used            bool      `db:"used"`
-	CreatedAt       time.Time `db:"created_at"`
+	// OIDCNonce carries the nonce forward from sso_challenges so the ID token
+	// can echo it. Empty for non-OIDC flows.
+	OIDCNonce string `db:"oidc_nonce"`
+	// Scope carries the original /v1/authorize scope forward so exchange can
+	// gate ID token issuance on `openid`.
+	Scope     string    `db:"scope"`
+	ExpiresAt time.Time `db:"expires_at"`
+	Used      bool      `db:"used"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type AuthCodesQ interface {
@@ -153,4 +174,36 @@ type AuthCodesQ interface {
 	// Consume atomically marks the code as used and returns it.
 	// Returns nil (no error) when the code is not found, already used, or expired.
 	Consume(code string) (*AuthCode, error)
+}
+
+// DesktopSession holds the desktop browser's pending auth-code rendezvous
+// (Phase 1.9 cross-device QR flow). The desktop creates it at /v1/authorize
+// (when display=qr), then polls /v1/authorize/qr/poll. The wallet binds an
+// auth code via /v1/authorize/qr/complete after a normal verify.
+type DesktopSession struct {
+	ID          string    `db:"id"`
+	ClientID    string    `db:"client_id"`
+	RedirectURI string    `db:"redirect_uri"`
+	State       string    `db:"state"`
+	// Code is NULL until the wallet completes verify + binds.
+	Code      *string   `db:"code"`
+	CreatedAt time.Time `db:"created_at"`
+	ExpiresAt time.Time `db:"expires_at"`
+	Consumed  bool      `db:"consumed"`
+}
+
+type DesktopSessionsQ interface {
+	// Insert stores a new session row.
+	Insert(s DesktopSession) error
+	// GetByID returns the session by id (regardless of consumed/expired).
+	GetByID(id string) (*DesktopSession, error)
+	// BindCode atomically attaches an auth code to the session iff the row
+	// exists, has not been consumed, has no code yet, and has not expired.
+	// Returns the bound session, or nil if the session is not in a bindable
+	// state (the caller should treat that as a 4xx).
+	BindCode(id, code string) (*DesktopSession, error)
+	// ConsumePoll atomically returns the bound code and marks the session
+	// consumed. Returns nil if the session has no code yet, has already been
+	// consumed, or has expired.
+	ConsumePoll(id string) (*DesktopSession, error)
 }
