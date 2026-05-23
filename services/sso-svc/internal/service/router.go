@@ -25,6 +25,7 @@ func (s *service) router() chi.Router {
 			handlers.CtxDeeplink(s.deeplink),
 			handlers.CtxDB(s.db),
 			handlers.CtxZKP(s.zkp),
+			handlers.CtxMatrix(s.matrix),
 		),
 	)
 

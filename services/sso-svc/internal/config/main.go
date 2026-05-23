@@ -6,6 +6,7 @@ import (
 	"github.com/jomhoor/sso-svc/internal/data/pg"
 	"github.com/jomhoor/sso-svc/internal/deeplink"
 	"github.com/jomhoor/sso-svc/internal/jwt"
+	"github.com/jomhoor/sso-svc/internal/matrix"
 	"github.com/jomhoor/sso-svc/internal/oidc"
 	"github.com/jomhoor/sso-svc/internal/pairwise"
 	"github.com/jomhoor/sso-svc/internal/zkp"
@@ -24,6 +25,7 @@ type Config interface {
 	deeplink.Deeplinker
 	pg.DBer
 	zkp.Zkper
+	matrix.Matrixer
 }
 
 type config struct {
@@ -37,6 +39,7 @@ type config struct {
 	deeplink.Deeplinker
 	pg.DBer
 	zkp.Zkper
+	matrix.Matrixer
 	getter kv.Getter
 }
 
@@ -53,5 +56,6 @@ func New(getter kv.Getter) Config {
 		Deeplinker:    deeplink.NewDeeplinker(getter),
 		DBer:          pg.NewDBer(getter),
 		Zkper:         zkp.NewZkper(getter),
+		Matrixer:      matrix.NewMatrixer(getter),
 	}
 }

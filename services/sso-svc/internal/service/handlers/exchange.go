@@ -139,7 +139,23 @@ func Exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 5b. ID token — OIDC only. Emitted iff the original /v1/authorize call
+	// 5b. Pairwise subject + ZK assertion lookup — shared by ID-token building
+	// (OIDC) and the Matrix room-join hook. One round-trip serves both.
+	psSub, psErr := db.PairwiseSubjects().GetBySubject(code.PairwiseSubject)
+	if psErr != nil {
+		Log(r).WithError(psErr).Warn("exchange: lookup pairwise subject")
+	}
+	var zkVerified bool
+	if psSub != nil {
+		a, aErr := db.Assertions().GetByWalletAndType(psSub.WalletID, "zk_verified")
+		if aErr != nil {
+			Log(r).WithError(aErr).Warn("exchange: lookup zk_verified assertion")
+		} else if a != nil && a.Status {
+			zkVerified = true
+		}
+	}
+
+	// 5c. ID token — OIDC only. Emitted iff the original /v1/authorize call
 	// carried `openid` in its scope. Trust signals (zk_verified) and the
 	// optional matrix_localpart are fetched live from the DB so a revoked
 	// assertion is reflected on the very next sign-in.
@@ -150,18 +166,11 @@ func Exchange(w http.ResponseWriter, r *http.Request) {
 			"aud":   code.ClientID,
 			"nonce": code.OIDCNonce,
 		}
-
-		ps, err := db.PairwiseSubjects().GetBySubject(code.PairwiseSubject)
-		if err != nil {
-			Log(r).WithError(err).Warn("exchange: lookup pairwise subject for id_token")
-		} else if ps != nil {
-			if ps.MatrixLocalpart != "" {
-				extra["matrix_localpart"] = ps.MatrixLocalpart
+		if psSub != nil {
+			if psSub.MatrixLocalpart != "" {
+				extra["matrix_localpart"] = psSub.MatrixLocalpart
 			}
-			assertion, err := db.Assertions().GetByWalletAndType(ps.WalletID, "zk_verified")
-			if err != nil {
-				Log(r).WithError(err).Warn("exchange: lookup zk_verified assertion for id_token")
-			} else if assertion != nil && assertion.Status {
+			if zkVerified {
 				extra["zk_verified"] = true
 			}
 		}
@@ -176,6 +185,42 @@ func Exchange(w http.ResponseWriter, r *http.Request) {
 			Log(r).WithError(err).Error("issue id_token")
 			ape.RenderErr(w, problems.InternalError())
 			return
+		}
+	}
+
+	// 5d. Matrix room membership (Phase 3 — Two Access Tiers). Non-blocking:
+	// the Synapse Admin API call runs in a goroutine. We INSERT the outbox row
+	// before spawning so a crash leaves a retryable row rather than a silent miss.
+	mx := Matrix(r)
+	if mx.IsEnabled() && req.ClientID == "matrix-mas" && psSub != nil && psSub.MatrixLocalpart != "" {
+		matrixUserID := "@" + psSub.MatrixLocalpart + ":jomhoor.org"
+
+		// Tier 1 — public room: every authenticated Matrix user.
+		if rowID, dbErr := db.MatrixPendingInvites().Insert(matrixUserID, mx.PublicRoom(), "join"); dbErr != nil {
+			Log(r).WithError(dbErr).Warn("exchange: insert matrix_pending_invite (public)")
+		} else {
+			go func(rid int64) {
+				if joinErr := mx.JoinRoom(matrixUserID, mx.PublicRoom()); joinErr != nil {
+					_ = db.MatrixPendingInvites().IncrementAttempts(rid, joinErr.Error())
+				} else {
+					_ = db.MatrixPendingInvites().Delete(rid)
+				}
+			}(rowID)
+		}
+
+		// Tier 2 — verified space: ZK-proven users only.
+		if zkVerified {
+			if rowID, dbErr := db.MatrixPendingInvites().Insert(matrixUserID, mx.VerifiedSpace(), "join"); dbErr != nil {
+				Log(r).WithError(dbErr).Warn("exchange: insert matrix_pending_invite (verified)")
+			} else {
+				go func(rid int64) {
+					if joinErr := mx.JoinRoom(matrixUserID, mx.VerifiedSpace()); joinErr != nil {
+						_ = db.MatrixPendingInvites().IncrementAttempts(rid, joinErr.Error())
+					} else {
+						_ = db.MatrixPendingInvites().Delete(rid)
+					}
+				}(rowID)
+			}
 		}
 	}
 

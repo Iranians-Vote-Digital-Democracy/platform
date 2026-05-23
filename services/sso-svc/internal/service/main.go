@@ -10,6 +10,7 @@ import (
 	"github.com/jomhoor/sso-svc/internal/data/pg"
 	"github.com/jomhoor/sso-svc/internal/deeplink"
 	"github.com/jomhoor/sso-svc/internal/jwt"
+	"github.com/jomhoor/sso-svc/internal/matrix"
 	"github.com/jomhoor/sso-svc/internal/oidc"
 	"github.com/jomhoor/sso-svc/internal/pairwise"
 	"github.com/jomhoor/sso-svc/internal/zkp"
@@ -27,6 +28,7 @@ type service struct {
 	deeplink    *deeplink.Config
 	db          *pg.DB
 	zkp         *zkp.Verifier
+	matrix      *matrix.Client
 }
 
 func (s *service) run() error {
@@ -47,6 +49,7 @@ func newService(cfg config.Config) *service {
 		deeplink:    cfg.Deeplink(),
 		db:          cfg.DB(),
 		zkp:         cfg.ZKP(),
+		matrix:      cfg.Matrix(),
 	}
 }
 

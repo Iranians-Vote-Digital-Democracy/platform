@@ -207,3 +207,26 @@ type DesktopSessionsQ interface {
 	// consumed, or has expired.
 	ConsumePoll(id string) (*DesktopSession, error)
 }
+
+// MatrixPendingInvite tracks a fire-and-forget Synapse Admin API call
+// (force-join a user into a room). The row is inserted before the goroutine
+// is spawned; on success the goroutine deletes the row; on failure it
+// increments attempts so a future retry worker can inspect or re-drive it.
+type MatrixPendingInvite struct {
+	ID        int64     `db:"id"`
+	UserID    string    `db:"user_id"`
+	RoomID    string    `db:"room_id"`
+	Action    string    `db:"action"`
+	Attempts  int       `db:"attempts"`
+	LastError string    `db:"last_error"`
+	CreatedAt time.Time `db:"created_at"`
+}
+
+type MatrixPendingInvitesQ interface {
+	// Insert stores a pending invite row and returns its auto-generated id.
+	Insert(userID, roomID, action string) (int64, error)
+	// Delete removes a row that was completed successfully.
+	Delete(id int64) error
+	// IncrementAttempts bumps the attempt counter and records the last error.
+	IncrementAttempts(id int64, lastError string) error
+}

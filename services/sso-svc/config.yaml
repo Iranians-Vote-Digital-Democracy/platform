@@ -106,6 +106,18 @@ zkp:
     # Add new variants here as verifier contracts are deployed (Variant-B
     # E33259, German ECDSA brainpoolP384r1, …).
 
+# Matrix / Synapse Admin API integration (Phase 3 — Two Access Tiers).
+# Leave admin_url blank (or omit the entire block) to disable Matrix
+# integration — the sso-svc will start and operate normally without it.
+# When enabled, every matrix-mas token exchange force-joins the user into
+# public_room (Tier 1) and, if they have a live zk_verified assertion,
+# also into verified_space (Tier 2).
+matrix:
+  admin_url: ${MATRIX_ADMIN_URL}
+  admin_token: ${MATRIX_ADMIN_TOKEN}
+  public_room: ${MATRIX_PUBLIC_ROOM}
+  verified_space: ${MATRIX_VERIFIED_SPACE}
+
 app_attestation:
   enabled: true
   # Set to "development" for local/TestFlight builds; "production" for App Store.

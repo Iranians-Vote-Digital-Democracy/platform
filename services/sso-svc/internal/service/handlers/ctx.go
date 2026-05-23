@@ -9,6 +9,7 @@ import (
 	"github.com/jomhoor/sso-svc/internal/data/pg"
 	"github.com/jomhoor/sso-svc/internal/deeplink"
 	"github.com/jomhoor/sso-svc/internal/jwt"
+	"github.com/jomhoor/sso-svc/internal/matrix"
 	"github.com/jomhoor/sso-svc/internal/oidc"
 	"github.com/jomhoor/sso-svc/internal/pairwise"
 	"github.com/jomhoor/sso-svc/internal/zkp"
@@ -28,6 +29,7 @@ const (
 	deeplinkCtxKey
 	dbCtxKey
 	zkpCtxKey
+	matrixCtxKey
 )
 
 // ── Setters ───────────────────────────────────────────────────────────────────
@@ -92,6 +94,12 @@ func CtxZKP(v *zkp.Verifier) func(context.Context) context.Context {
 	}
 }
 
+func CtxMatrix(c *matrix.Client) func(context.Context) context.Context {
+	return func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, matrixCtxKey, c)
+	}
+}
+
 // ── Getters ───────────────────────────────────────────────────────────────────
 
 func Log(r *http.Request) *logan.Entry {
@@ -132,4 +140,8 @@ func DB(r *http.Request) *pg.DB {
 
 func ZKP(r *http.Request) *zkp.Verifier {
 	return r.Context().Value(zkpCtxKey).(*zkp.Verifier)
+}
+
+func Matrix(r *http.Request) *matrix.Client {
+	return r.Context().Value(matrixCtxKey).(*matrix.Client)
 }
