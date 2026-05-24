@@ -1,13 +1,13 @@
 FROM golang:1.22-alpine AS buildbase
 
-RUN apk add git build-base
+RUN apk add git
 
 WORKDIR /go/src/github.com/jomhoor/sso-svc
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-RUN GOOS=linux go build -o /usr/local/bin/sso-svc .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/sso-svc .
 
 
 FROM alpine:3.20
