@@ -2,6 +2,7 @@ package pg
 
 import (
 	"database/sql"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -47,8 +48,18 @@ func (d *dber) DB() *DB {
 			panic(errors.WithMessage(err, "failed to open postgres connection"))
 		}
 
-		if err := db.Ping(); err != nil {
-			panic(errors.WithMessage(err, "failed to ping postgres"))
+		// Retry ping until postgres is ready (handles container restart race on reboot).
+		const maxWait = 60 * time.Second
+		const interval = 3 * time.Second
+		deadline := time.Now().Add(maxWait)
+		for {
+			if err := db.Ping(); err == nil {
+				break
+			} else if time.Now().After(deadline) {
+				panic(errors.WithMessage(err, "timed out waiting for postgres to be ready"))
+			} else {
+				time.Sleep(interval)
+			}
 		}
 
 		return &DB{raw: db}
