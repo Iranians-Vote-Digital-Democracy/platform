@@ -189,6 +189,10 @@ type DesktopSession struct {
 	ClientID    string    `db:"client_id"`
 	RedirectURI string    `db:"redirect_uri"`
 	State       string    `db:"state"`
+	// ChallengeNonce links this desktop rendezvous row to the /v1/authorize
+	// nonce rendered into the QR payload. It lets /v1/authorize/verify auto-bind
+	// the auth code even if the wallet does not call /v1/authorize/qr/complete.
+	ChallengeNonce string `db:"challenge_nonce"`
 	// Code is NULL until the wallet completes verify + binds.
 	Code      *string   `db:"code"`
 	CreatedAt time.Time `db:"created_at"`
@@ -206,6 +210,10 @@ type DesktopSessionsQ interface {
 	// Returns the bound session, or nil if the session is not in a bindable
 	// state (the caller should treat that as a 4xx).
 	BindCode(id, code string) (*DesktopSession, error)
+	// BindCodeByChallenge atomically attaches an auth code to the first pending
+	// desktop session row that was created for this authorize challenge nonce.
+	// Returns nil when no eligible session exists.
+	BindCodeByChallenge(challengeNonce, code string) (*DesktopSession, error)
 	// ConsumePoll atomically returns the bound code and marks the session
 	// consumed. Returns nil if the session has no code yet, has already been
 	// consumed, or has expired.

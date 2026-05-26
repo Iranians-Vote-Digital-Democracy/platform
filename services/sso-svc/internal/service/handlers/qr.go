@@ -139,6 +139,7 @@ func renderQRPage(
 		ClientID:    clientID,
 		RedirectURI: redirectURI,
 		State:       state,
+		ChallengeNonce: challengeNonce,
 		ExpiresAt:   time.Now().UTC().Add(desktopSessionTTL),
 	}); err != nil {
 		return errors.Wrap(err, "insert desktop session")
@@ -282,8 +283,24 @@ func QRComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if bound == nil {
-		// Row is either missing, already has a code, already consumed, or
-		// expired. We don't leak which — Conflict covers them all.
+		// Idempotency: if the same code is already bound on an active session,
+		// treat this as success so duplicate mobile submits don't surface errors.
+		existing, lookupErr := DB(r).DesktopSessions().GetByID(req.SessionID)
+		if lookupErr != nil {
+			Log(r).WithError(lookupErr).Error("qr complete: lookup desktop session")
+			ape.RenderErr(w, problems.InternalError())
+			return
+		}
+		if existing != nil && !existing.Consumed && existing.ExpiresAt.After(time.Now().UTC()) &&
+			existing.Code != nil && *existing.Code == req.Code {
+			w.Header().Set("Cache-Control", "no-store")
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(struct{}{})
+			return
+		}
+
+		// Row is either missing, already has a different code, already consumed,
+		// or expired. We don't leak which — Conflict covers them all.
 		http.Error(w, "session not bindable", http.StatusConflict)
 		return
 	}

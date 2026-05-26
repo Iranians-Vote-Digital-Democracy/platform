@@ -349,6 +349,19 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Desktop QR fallback: bind by authorize challenge nonce. This keeps
+	// cross-device login working even if the wallet misses /qr/complete.
+	if sess, err := db.DesktopSessions().BindCodeByChallenge(req.Challenge, code); err != nil {
+		Log(r).WithError(err).WithField("challenge", req.Challenge).Error("bind desktop session by challenge")
+		ape.RenderErr(w, problems.InternalError())
+		return
+	} else if sess != nil {
+		Log(r).WithFields(map[string]interface{}{
+			"session_id": sess.ID,
+			"client_id":  sess.ClientID,
+		}).Info("bound desktop session via verify fallback")
+	}
+
 	// 8. Build the redirect URL the wallet app should hand to the browser.
 	redirect, err := url.Parse(challenge.RedirectURI)
 	if err != nil {

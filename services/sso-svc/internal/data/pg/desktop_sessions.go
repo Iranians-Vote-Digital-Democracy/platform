@@ -22,8 +22,8 @@ func (d *DB) DesktopSessions() data.DesktopSessionsQ {
 func (q *desktopSessionsQ) Insert(s data.DesktopSession) error {
 	query, args, err := sq.
 		Insert(desktopSessionsTable).
-		Columns("id", "client_id", "redirect_uri", "state", "expires_at").
-		Values(s.ID, s.ClientID, s.RedirectURI, s.State, s.ExpiresAt).
+		Columns("id", "client_id", "redirect_uri", "state", "challenge_nonce", "expires_at").
+		Values(s.ID, s.ClientID, s.RedirectURI, s.State, s.ChallengeNonce, s.ExpiresAt).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -36,12 +36,12 @@ func (q *desktopSessionsQ) Insert(s data.DesktopSession) error {
 }
 
 // scan order shared by GetByID / BindCode / ConsumePoll.
-const desktopSessionReturning = "id, client_id, redirect_uri, state, code, created_at, expires_at, consumed"
+const desktopSessionReturning = "id, client_id, redirect_uri, state, challenge_nonce, code, created_at, expires_at, consumed"
 
 func scanDesktopSession(row interface{ Scan(...any) error }) (*data.DesktopSession, error) {
 	var s data.DesktopSession
 	if err := row.Scan(
-		&s.ID, &s.ClientID, &s.RedirectURI, &s.State, &s.Code,
+		&s.ID, &s.ClientID, &s.RedirectURI, &s.State, &s.ChallengeNonce, &s.Code,
 		&s.CreatedAt, &s.ExpiresAt, &s.Consumed,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -83,6 +83,27 @@ func (q *desktopSessionsQ) BindCode(id, code string) (*data.DesktopSession, erro
 		ToSql()
 	if err != nil {
 		return nil, errors.Wrap(err, "build bind desktop session sql")
+	}
+	return scanDesktopSession(q.db.QueryRow(query, args...))
+}
+
+// BindCodeByChallenge lets Verify auto-complete desktop QR flows without a
+// second wallet round-trip to /v1/authorize/qr/complete.
+func (q *desktopSessionsQ) BindCodeByChallenge(challengeNonce, code string) (*data.DesktopSession, error) {
+	query, args, err := sq.
+		Update(desktopSessionsTable).
+		Set("code", code).
+		Where(sq.And{
+			sq.Eq{"challenge_nonce": challengeNonce},
+			sq.Eq{"consumed": false},
+			sq.Eq{"code": nil},
+			sq.Gt{"expires_at": time.Now().UTC()},
+		}).
+		Suffix("RETURNING " + desktopSessionReturning).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return nil, errors.Wrap(err, "build bind desktop session by challenge sql")
 	}
 	return scanDesktopSession(q.db.QueryRow(query, args...))
 }
