@@ -20,6 +20,39 @@ type oauthErrorResponse struct {
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
+func decodeExchangeRequest(r *http.Request) (exchangeRequest, error) {
+	var req exchangeRequest
+
+	ct := strings.ToLower(r.Header.Get("Content-Type"))
+	if strings.Contains(ct, "application/x-www-form-urlencoded") {
+		if err := r.ParseForm(); err != nil {
+			return req, err
+		}
+		req.Code = r.Form.Get("code")
+		req.ClientID = r.Form.Get("client_id")
+		req.ClientSecret = r.Form.Get("client_secret")
+		req.CodeVerifier = r.Form.Get("code_verifier")
+	} else {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return req, err
+		}
+	}
+
+	// OAuth token endpoint often sends client credentials via HTTP Basic auth.
+	if req.ClientID == "" || req.ClientSecret == "" {
+		if basicID, basicSecret, ok := r.BasicAuth(); ok {
+			if req.ClientID == "" {
+				req.ClientID = basicID
+			}
+			if req.ClientSecret == "" {
+				req.ClientSecret = basicSecret
+			}
+		}
+	}
+
+	return req, nil
+}
+
 func renderOAuthError(w http.ResponseWriter, status int, code, description string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
@@ -63,8 +96,8 @@ type exchangeResponse struct {
 //  5. Issue access + refresh JWTs (sub = pairwiseSubject).
 //  6. Return { access_token, refresh_token, expires_in, token_type }.
 func Exchange(w http.ResponseWriter, r *http.Request) {
-	var req exchangeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	req, err := decodeExchangeRequest(r)
+	if err != nil {
 		renderOAuthError(w, http.StatusBadRequest, "invalid_request", "failed to decode request body")
 		return
 	}
