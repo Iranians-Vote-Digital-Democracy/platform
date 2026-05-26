@@ -1,0 +1,5 @@
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates
+COPY sso-svc-linux-amd64 /usr/local/bin/sso-svc
+RUN chmod +x /usr/local/bin/sso-svc
+ENTRYPOINT ["sso-svc"]

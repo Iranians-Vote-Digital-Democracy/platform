@@ -98,6 +98,13 @@ func (s *service) router() chi.Router {
 		// Token refresh
 		r.With(middleware.AuthMiddleware(s.jwt, s.log, jwt.RefreshTokenType), middleware.BanMiddleware()).
 			Post("/tokens/refresh", handlers.Refresh)
+
+		// Q6 — Admin surface for externally-stamped assertions (e.g. the
+		// DIFCongress signup worker writing `difcongress_member`). Bearer
+		// token comparison only; no JWT. When admin.token is empty the
+		// middleware short-circuits with 503.
+		r.With(middleware.AdminTokenMiddleware(s.admin)).
+			Post("/admin/assertions", handlers.SubmitAdminAssertion)
 	})
 
 	return r

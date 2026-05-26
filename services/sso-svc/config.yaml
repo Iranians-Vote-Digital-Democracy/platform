@@ -118,6 +118,12 @@ matrix:
   public_room: ${MATRIX_PUBLIC_ROOM}
   verified_space: ${MATRIX_VERIFIED_SPACE}
 
+# Q6 — admin bearer token for /v1/admin/assertions (DIFCongress signup worker
+# stamping `difcongress_member`). Leave token blank to disable the admin
+# surface entirely — every request to /v1/admin/* gets 503.
+admin:
+  token: ${SSO_ADMIN_TOKEN}
+
 app_attestation:
   enabled: true
   # Set to "development" for local/TestFlight builds; "production" for App Store.

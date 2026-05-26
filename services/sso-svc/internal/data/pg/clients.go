@@ -21,7 +21,7 @@ func (d *DB) Clients() data.SSOClientsQ {
 
 func (q *clientsQ) GetByID(clientID string) (*data.SSOClient, error) {
 	query, args, err := sq.
-		Select("id", "name", "logo_url", "redirect_uris", "client_secret", "zk_required", "created_at").
+		Select("id", "name", "logo_url", "redirect_uris", "client_secret", "zk_required", "requires_difcongress", "created_at").
 		From(clientsTable).
 		Where(sq.Eq{"id": clientID}).
 		PlaceholderFormat(sq.Dollar).
@@ -33,7 +33,7 @@ func (q *clientsQ) GetByID(clientID string) (*data.SSOClient, error) {
 	var c data.SSOClient
 	var redirectURIs pq.StringArray
 	row := q.db.QueryRow(query, args...)
-	if err := row.Scan(&c.ID, &c.Name, &c.LogoURL, &redirectURIs, &c.ClientSecret, &c.ZKRequired, &c.CreatedAt); err != nil {
+	if err := row.Scan(&c.ID, &c.Name, &c.LogoURL, &redirectURIs, &c.ClientSecret, &c.ZKRequired, &c.RequiresDifcongress, &c.CreatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}

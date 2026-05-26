@@ -57,7 +57,11 @@ type SSOClient struct {
 	RedirectURIs []string  `db:"redirect_uris"`
 	ClientSecret string    `db:"client_secret"`
 	ZKRequired   bool      `db:"zk_required"`
-	CreatedAt    time.Time `db:"created_at"`
+	// RequiresDifcongress gates /v1/authorize/verify on the wallet carrying a
+	// live `difcongress_member` assertion. Stamped by the DIFCongress signup
+	// worker via POST /v1/admin/assertions. Never embedded in tokens.
+	RequiresDifcongress bool      `db:"requires_difcongress"`
+	CreatedAt           time.Time `db:"created_at"`
 }
 
 type SSOChallenge struct {

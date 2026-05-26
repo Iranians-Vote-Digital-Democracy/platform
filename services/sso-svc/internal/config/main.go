@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/jomhoor/sso-svc/internal/admin"
 	"github.com/jomhoor/sso-svc/internal/attestation"
 	"github.com/jomhoor/sso-svc/internal/cookies"
 	"github.com/jomhoor/sso-svc/internal/data/pg"
@@ -26,6 +27,7 @@ type Config interface {
 	pg.DBer
 	zkp.Zkper
 	matrix.Matrixer
+	admin.Adminer
 }
 
 type config struct {
@@ -40,6 +42,7 @@ type config struct {
 	pg.DBer
 	zkp.Zkper
 	matrix.Matrixer
+	admin.Adminer
 	getter kv.Getter
 }
 
@@ -57,5 +60,6 @@ func New(getter kv.Getter) Config {
 		DBer:          pg.NewDBer(getter),
 		Zkper:         zkp.NewZkper(getter),
 		Matrixer:      matrix.NewMatrixer(getter),
+		Adminer:       admin.NewAdminer(getter),
 	}
 }

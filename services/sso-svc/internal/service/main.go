@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/jomhoor/sso-svc/internal/admin"
 	"github.com/jomhoor/sso-svc/internal/attestation"
 	"github.com/jomhoor/sso-svc/internal/config"
 	"github.com/jomhoor/sso-svc/internal/cookies"
@@ -29,6 +30,7 @@ type service struct {
 	db          *pg.DB
 	zkp         *zkp.Verifier
 	matrix      *matrix.Client
+	admin       *admin.Config
 }
 
 func (s *service) run() error {
@@ -50,6 +52,7 @@ func newService(cfg config.Config) *service {
 		db:          cfg.DB(),
 		zkp:         cfg.ZKP(),
 		matrix:      cfg.Matrix(),
+		admin:       cfg.Admin(),
 	}
 }
 

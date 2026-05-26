@@ -27,6 +27,10 @@ type clientMetadataResponse struct {
 	LogoURL      *string  `json:"logo_url,omitempty"`
 	RedirectURIs []string `json:"redirect_uris"`
 	ZKRequired   bool     `json:"zk_required"`
+	// RequiresDifcongress lets the wallet pre-route a user to the DIFCongress
+	// signup off-ramp instead of letting /v1/authorize/verify reject them with
+	// a 403. Server-side enforcement still happens at /v1/authorize/verify.
+	RequiresDifcongress bool `json:"requires_difcongress"`
 }
 
 // GetClient handles GET /v1/clients/{id}.
@@ -52,11 +56,12 @@ func GetClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := clientMetadataResponse{
-		ID:           client.ID,
-		Name:         client.Name,
-		LogoURL:      client.LogoURL,
-		RedirectURIs: client.RedirectURIs,
-		ZKRequired:   client.ZKRequired,
+		ID:                  client.ID,
+		Name:                client.Name,
+		LogoURL:             client.LogoURL,
+		RedirectURIs:        client.RedirectURIs,
+		ZKRequired:          client.ZKRequired,
+		RequiresDifcongress: client.RequiresDifcongress,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

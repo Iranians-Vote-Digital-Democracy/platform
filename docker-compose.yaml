@@ -226,6 +226,7 @@ services:
       - "127.0.0.1:8081:80"
     volumes:
       - ./configs/element/config.json:/app/config.json:ro
+      - ./configs/element/config.json:/tmp/element-web-config/config.json
     restart: unless-stopped
 
 volumes:

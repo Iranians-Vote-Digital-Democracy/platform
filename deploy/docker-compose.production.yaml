@@ -123,6 +123,18 @@ services:
       - SSO_ANDROID_PACKAGE_NAME=${SSO_ANDROID_PACKAGE_NAME:-org.jomhoor.app}
       - SSO_ANDROID_SIGNING_CERT_DIGESTS=${SSO_ANDROID_SIGNING_CERT_DIGESTS}
       - SSO_ANDROID_REQUIRE_STRONG_INTEGRITY=${SSO_ANDROID_REQUIRE_STRONG_INTEGRITY:-true}
+      # Q6 — admin bearer for /v1/admin/assertions (DIFCongress worker, etc.).
+      # Leave blank to disable the admin surface (every /v1/admin/* returns 503).
+      - SSO_ADMIN_TOKEN=${SSO_ADMIN_TOKEN}
+      # Phase 3 — Matrix / Synapse Admin API. Leave MATRIX_ADMIN_URL blank to
+      # disable the integration (sso-svc starts and operates normally without
+      # auto-join). When set, every matrix-mas token exchange force-joins the
+      # user into MATRIX_PUBLIC_ROOM (Tier 1) and, if zk_verified, also into
+      # MATRIX_VERIFIED_SPACE (Tier 2).
+      - MATRIX_ADMIN_URL=${MATRIX_ADMIN_URL}
+      - MATRIX_ADMIN_TOKEN=${MATRIX_ADMIN_TOKEN}
+      - MATRIX_PUBLIC_ROOM=${MATRIX_PUBLIC_ROOM}
+      - MATRIX_VERIFIED_SPACE=${MATRIX_VERIFIED_SPACE}
     # config.yaml is baked into the image (see services/sso-svc/Dockerfile);
     # all host-specific values come from env vars above.
     depends_on:

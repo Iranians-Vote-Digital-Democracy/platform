@@ -46,7 +46,7 @@ INSERT INTO sso_clients (id, client_secret, redirect_uris, zk_required, name, lo
 VALUES (
     'matrix-mas',
     '<paste bcrypt hash here>',
-    ARRAY['https://mas.jomhoor.org/upstream/oauth2/callback/jomhoor-sso'],
+    ARRAY['https://mas.jomhoor.org/upstream/callback/01KS8ZC147EV0K4C2M2A35JMHG'],
     FALSE,  -- MAS login does not require ZK; tier is determined post-login (Phase 3)
     'Jomhoor Matrix',
     'https://jomhoor.org/images/logo.svg'
