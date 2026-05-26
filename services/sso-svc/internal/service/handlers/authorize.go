@@ -127,7 +127,14 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	// 302'ing to a wallet that isn't on this device. Same-device clients
 	// (Taraaz, difcongress, mobile-first MAS flows) omit it and get the
 	// existing behaviour.
-	if q.Get("display") == "qr" {
+	//
+	// In addition, when no explicit `display` is set and the request comes
+	// from a desktop browser, we auto-render the QR page — otherwise the
+	// browser would 302 to `jomhoor://...` which it cannot open. RPs that
+	// want to force the deep-link path on desktop (e.g. headless e2e tests)
+	// can pass `display=mobile`.
+	display := q.Get("display")
+	if display == "qr" || (display == "" && isDesktopUA(r.UserAgent())) {
 		if err := renderQRPage(w, r, nonce, clientID, redirectURI, state); err != nil {
 			Log(r).WithError(err).Error("render qr page")
 			ape.RenderErr(w, problems.InternalError())
@@ -285,6 +292,27 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// Q6 — DIFCongress-membership gate. Mirrors the zk_required check above;
+	// stamp source is POST /v1/admin/assertions called by the DIFCongress
+	// signup worker. Never persisted on the auth code or in tokens — the
+	// gate is re-evaluated on every /v1/authorize/verify hit.
+	if client.RequiresDifcongress {
+		assertion, err := db.Assertions().GetByWalletAndType(wallet.ID, "difcongress_member")
+		if err != nil {
+			Log(r).WithError(err).Error("lookup difcongress_member assertion")
+			ape.RenderErr(w, problems.InternalError())
+			return
+		}
+		if assertion == nil {
+			Log(r).WithFields(map[string]interface{}{
+				"client_id":      client.ID,
+				"wallet_address": req.WalletAddress,
+			}).Warn("client requires difcongress_member assertion but wallet has none")
+			ape.RenderErr(w, problems.Forbidden())
+			return
+		}
+	}
 	// Assertions are fetched live from the DB at /v1/tokens/validate time;
 	// they are not stored on the auth code.
 
@@ -358,4 +386,38 @@ func contains(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+// isDesktopUA returns true when the User-Agent string does NOT advertise a
+// mobile / tablet device. We use a deny-list of common mobile substrings
+// rather than a positive desktop match because desktop UAs are far more
+// varied. False positives (a mobile UA classified as desktop) are worse than
+// false negatives, so we keep the list comprehensive.
+//
+// Empty UA → treated as desktop (curl, e2e probes) so the QR page renders
+// and the operator can see something useful in the browser.
+func isDesktopUA(ua string) bool {
+	if ua == "" {
+		return true
+	}
+	lower := strings.ToLower(ua)
+	mobileMarkers := []string{
+		"mobile",
+		"iphone",
+		"ipod",
+		"ipad",
+		"android",
+		"blackberry",
+		"opera mini",
+		"opera mobi",
+		"iemobile",
+		"windows phone",
+		"webos",
+	}
+	for _, m := range mobileMarkers {
+		if strings.Contains(lower, m) {
+			return false
+		}
+	}
+	return true
 }
