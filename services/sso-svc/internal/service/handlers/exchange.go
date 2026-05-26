@@ -10,11 +10,26 @@ import (
 	"time"
 
 	"github.com/jomhoor/sso-svc/internal/jwt"
-	"github.com/pkg/errors"
 	"gitlab.com/distributed_lab/ape"
 	"gitlab.com/distributed_lab/ape/problems"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type oauthErrorResponse struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description,omitempty"`
+}
+
+func renderOAuthError(w http.ResponseWriter, status int, code, description string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(oauthErrorResponse{
+		Error:            code,
+		ErrorDescription: description,
+	})
+}
 
 // exchangeRequest is the wire body for POST /v1/tokens/exchange.
 // This endpoint is server-to-server — the RP backend calls it directly,
@@ -50,14 +65,13 @@ type exchangeResponse struct {
 func Exchange(w http.ResponseWriter, r *http.Request) {
 	var req exchangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		ape.RenderErr(w, problems.BadRequest(errors.Wrap(err, "decode body"))...)
+		renderOAuthError(w, http.StatusBadRequest, "invalid_request", "failed to decode request body")
 		return
 	}
 	if req.Code == "" || req.ClientID == "" || req.ClientSecret == "" || req.CodeVerifier == "" {
 		Log(r).Debugf("exchange: missing required field (code=%t client_id=%t secret=%t verifier=%t)",
 			req.Code != "", req.ClientID != "", req.ClientSecret != "", req.CodeVerifier != "")
-		ape.RenderErr(w, problems.BadRequest(
-			errors.New("code, client_id, client_secret, and code_verifier are required"))...)
+		renderOAuthError(w, http.StatusBadRequest, "invalid_request", "code, client_id, client_secret, and code_verifier are required")
 		return
 	}
 
@@ -73,14 +87,14 @@ func Exchange(w http.ResponseWriter, r *http.Request) {
 	if code == nil {
 		Log(r).Debugf("exchange: code not found / expired / already consumed (code_prefix=%s)", safePrefix(req.Code))
 		// Deliberately vague to avoid oracle attacks.
-		ape.RenderErr(w, problems.BadRequest(errors.New("invalid, expired, or already used code"))...)
+		renderOAuthError(w, http.StatusBadRequest, "invalid_grant", "invalid, expired, or already used code")
 		return
 	}
 
 	// 2. client_id binding.
 	if code.ClientID != req.ClientID {
 		Log(r).Debugf("exchange: client_id mismatch (code.client_id=%s req.client_id=%s)", code.ClientID, req.ClientID)
-		ape.RenderErr(w, problems.BadRequest(errors.New("client_id mismatch"))...)
+		renderOAuthError(w, http.StatusBadRequest, "invalid_client", "client_id mismatch")
 		return
 	}
 
@@ -92,13 +106,13 @@ func Exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if client == nil {
-		ape.RenderErr(w, problems.BadRequest(errors.New("unknown client_id"))...)
+		renderOAuthError(w, http.StatusBadRequest, "invalid_client", "unknown client_id")
 		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(client.ClientSecret), []byte(req.ClientSecret)); err != nil {
 		// Log at info to help with client mis-configuration debugging, but don't leak reason.
 		Log(r).WithError(err).Info("client_secret verification failed")
-		ape.RenderErr(w, problems.BadRequest(errors.New("invalid client credentials"))...)
+		renderOAuthError(w, http.StatusBadRequest, "invalid_client", "invalid client credentials")
 		return
 	}
 
@@ -108,7 +122,7 @@ func Exchange(w http.ResponseWriter, r *http.Request) {
 	computed := base64.RawURLEncoding.EncodeToString(sum[:])
 	if computed != code.CodeChallenge {
 		Log(r).Debugf("exchange: PKCE mismatch (computed_prefix=%s stored_prefix=%s)", safePrefix(computed), safePrefix(code.CodeChallenge))
-		ape.RenderErr(w, problems.BadRequest(errors.New("code_verifier does not match code_challenge"))...)
+		renderOAuthError(w, http.StatusBadRequest, "invalid_grant", "code_verifier does not match code_challenge")
 		return
 	}
 
