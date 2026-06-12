@@ -12,7 +12,7 @@ network:
   # Local Hardhat RPC (host.docker.internal for Docker containers)
   rpc: "http://host.docker.internal:8545"
 
-  # Registration contract address (deployed to local Hardhat - Feb 11, 2026)
+  # Registration contract address
   registration: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
 
   # StateKeeper contract

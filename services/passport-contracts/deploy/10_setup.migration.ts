@@ -140,6 +140,7 @@ import {
   C_RSA_SHA2_4096,
   C_RSA_SHA2_2048_122125,
   C_RSA_SHA2_3072_56611,
+  C_RSA_SHA1_3072_56611,
   C_RSA_SHA512_2048,
   C_RSA_SHA512_4096,
   C_RSAPSS_SHA2_2048,
@@ -167,6 +168,7 @@ import {
   P_NO_AA,
   P_RSA_SHA1_2688,
   P_RSA_SHA1_2688_3,
+  P_RSA_SHA1_2688_51279,
   P_RSA_SHA256_2688,
   P_RSA_SHA256_2688_3,
   Z_PER_PASSPORT_1_256_3_5_576_248_NA,
@@ -311,7 +313,11 @@ export = async (deployer: Deployer) => {
   const cRsa4096Sha512Dispatcher = await deployer.deployed(CRSADispatcher__factory, "CRSADispatcher SHA512 512 65537");
   const cRsa3072Sha2Dispatcher_56611 = await deployer.deployed(
     CRSADispatcher__factory,
-    "CRSADispatcher SHA2 512 56611",
+    "CRSADispatcher SHA2 384 56611",
+  );
+  const cRsa3072Sha1Dispatcher_56611 = await deployer.deployed(
+    CRSADispatcher__factory,
+    "CRSADispatcher SHA1 384 56611",
   );
   const cRsa2048Sha2Dispatcher_122125 = await deployer.deployed(
     CRSADispatcher__factory,
@@ -417,6 +423,7 @@ export = async (deployer: Deployer) => {
 
   const pRsaSha12688Dispatcher = await deployer.deployed(PRSASHADispatcher__factory, "PRSASHADispatcher 65537 SHA1");
   const pRsaSha126883Dispatcher = await deployer.deployed(PRSASHADispatcher__factory, "PRSASHADispatcher 3 SHA1");
+  const pRsaSha1268851279Dispatcher = await deployer.deployed(PRSASHADispatcher__factory, "PRSASHADispatcher 51279 SHA1");
 
   const pRsaSha22688Dispatcher = await deployer.deployed(PRSASHADispatcher__factory, "PRSASHADispatcher 65537 SHA2");
   const pRsaSha226883Dispatcher = await deployer.deployed(PRSASHADispatcher__factory, "PRSASHADispatcher 3 SHA2");
@@ -793,6 +800,10 @@ export = async (deployer: Deployer) => {
     await cRsa3072Sha2Dispatcher_56611.getAddress(),
   );
   await registration.mockAddCertificateDispatcher(
+    C_RSA_SHA1_3072_56611,
+    await cRsa3072Sha1Dispatcher_56611.getAddress(),
+  );
+  await registration.mockAddCertificateDispatcher(
     C_RSA_SHA2_2048_122125,
     await cRsa2048Sha2Dispatcher_122125.getAddress(),
   );
@@ -867,6 +878,7 @@ export = async (deployer: Deployer) => {
 
   await registration.mockAddPassportDispatcher(P_RSA_SHA1_2688, await pRsaSha12688Dispatcher.getAddress());
   await registration.mockAddPassportDispatcher(P_RSA_SHA1_2688_3, await pRsaSha126883Dispatcher.getAddress());
+  await registration.mockAddPassportDispatcher(P_RSA_SHA1_2688_51279, await pRsaSha1268851279Dispatcher.getAddress());
 
   await registration.mockAddPassportDispatcher(P_RSA_SHA256_2688, await pRsaSha22688Dispatcher.getAddress());
   await registration.mockAddPassportDispatcher(P_RSA_SHA256_2688_3, await pRsaSha226883Dispatcher.getAddress());

@@ -65,7 +65,6 @@ func VoteV3(w http.ResponseWriter, r *http.Request) {
 	proposalID := calldataInfo.ProposalID.Int64()
 	log := Log(r).WithFields(logan.F{
 		"user-agent":  r.Header.Get("User-Agent"),
-		"calldata":    calldata,
 		"destination": destination,
 		"proposal_id": proposalID,
 	})
@@ -175,25 +174,26 @@ func parseNoirCallData(data []byte) (NoirVoteCalldata, error) {
 	// Try executeNoir first (TD3 passports)
 	method, ok := parsedABI.Methods["executeNoir"]
 	if ok && compareSelectors(selector, method.ID) {
-		return unpackNoirCalldata(method, data[4:], config)
+		return unpackNoirCalldata(method, data[4:], config, false) // isINID=false
 	}
 
 	// Try executeTD1Noir (TD1 ID cards like INID)
 	td1Method, ok := parsedABI.Methods["executeTD1Noir"]
 	if ok && compareSelectors(selector, td1Method.ID) {
-		return unpackNoirCalldata(td1Method, data[4:], config)
+		return unpackNoirCalldata(td1Method, data[4:], config, false) // isINID=false
 	}
 
-	// Try executeINID (INID with 23-signal TD3-style layout)
+	// Try executeINID (INID with 23-signal TD3-style layout, 4-field UserData tuple)
 	// Selector: 0x07eb6b82 = keccak256("executeINID(bytes32,uint256,bytes,bytes)")[:4]
 	// Has same signature as executeTD1Noir, so we can reuse that method for unpacking
 	executeINIDSelector := []byte{0x07, 0xeb, 0x6b, 0x82}
 	if compareSelectors(selector, executeINIDSelector) {
 		// Reuse executeTD1Noir method for unpacking since same signature
-		return unpackNoirCalldata(td1Method, data[4:], config)
+		return unpackNoirCalldata(td1Method, data[4:], config, true) // isINID=true
 	}
 
 	return config, fmt.Errorf("method not recognized - selector: %x. Expected executeNoir, executeTD1Noir, or executeINID", selector)
+}
 }
 
 // compareSelectors checks if two 4-byte selectors match
@@ -204,8 +204,8 @@ func compareSelectors(a, b []byte) bool {
 	return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3]
 }
 
-// unpackNoirCalldata unpacks the calldata for executeNoir or executeTD1Noir methods
-func unpackNoirCalldata(method abi.Method, data []byte, config NoirVoteCalldata) (NoirVoteCalldata, error) {
+// unpackNoirCalldata unpacks the calldata for executeNoir, executeTD1Noir, or executeINID methods
+func unpackNoirCalldata(method abi.Method, data []byte, config NoirVoteCalldata, isINID bool) (NoirVoteCalldata, error) {
 	decoded, err := method.Inputs.Unpack(data)
 	if err != nil {
 		return config, fmt.Errorf("failed to unpack noir calldata: %v", err)
@@ -219,7 +219,7 @@ func unpackNoirCalldata(method abi.Method, data []byte, config NoirVoteCalldata)
 	config.CurrentDate = decoded[1].(*big.Int)
 	userDataEncoded := decoded[2].([]byte)
 	config.ProofBytes = decoded[3].([]byte)
-	proposalID, vote, userData, err := decodeUserData(userDataEncoded)
+	proposalID, vote, userData, err := decodeUserData(userDataEncoded, isINID)
 	if err != nil {
 		return config, fmt.Errorf("failed to decode user data: %v", err)
 	}
@@ -231,9 +231,59 @@ func unpackNoirCalldata(method abi.Method, data []byte, config NoirVoteCalldata)
 	return config, nil
 }
 
-func decodeUserData(data []byte) (*big.Int, []*big.Int, biopassportvoting.BaseVotingUserData, error) {
+func decodeUserData(data []byte, isINID bool) (*big.Int, []*big.Int, biopassportvoting.BaseVotingUserData, error) {
 	uint256Type, _ := abi.NewType("uint256", "", nil)
 	uint256Array, _ := abi.NewType("uint256[]", "", nil)
+
+	if isINID {
+		// INID uses 4-field tuple: (nullifier, citizenship, identityCreationTimestamp, personalNumber)
+		tupleType, _ := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+			{Name: "nullifier", Type: "uint256"},
+			{Name: "citizenship", Type: "uint256"},
+			{Name: "identityCreationTimestamp", Type: "uint256"},
+			{Name: "personalNumber", Type: "uint256"},
+		})
+
+		arguments := abi.Arguments{
+			{Type: uint256Type},
+			{Type: uint256Array},
+			{Type: tupleType},
+		}
+
+		decoded, err := arguments.Unpack(data)
+		if err != nil {
+			return nil, nil, biopassportvoting.BaseVotingUserData{}, err
+		}
+
+		if len(decoded) != 3 {
+			return nil, nil, biopassportvoting.BaseVotingUserData{}, fmt.Errorf("invalid userDataEncoded structure for INID")
+		}
+
+		proposalID := decoded[0].(*big.Int)
+		vote := decoded[1].([]*big.Int)
+
+		userDataRaw := decoded[2]
+		userDataStruct, ok := userDataRaw.(struct {
+			Nullifier                 *big.Int `json:"nullifier"`
+			Citizenship               *big.Int `json:"citizenship"`
+			IdentityCreationTimestamp *big.Int `json:"identityCreationTimestamp"`
+			PersonalNumber            *big.Int `json:"personalNumber"`
+		})
+		if !ok {
+			return nil, nil, biopassportvoting.BaseVotingUserData{}, fmt.Errorf("failed to cast INID userData to expected struct, got %T", userDataRaw)
+		}
+
+		userData := biopassportvoting.BaseVotingUserData{
+			Nullifier:                 userDataStruct.Nullifier,
+			Citizenship:               userDataStruct.Citizenship,
+			IdentityCreationTimestamp: userDataStruct.IdentityCreationTimestamp,
+			// Note: PersonalNumber is from INID circuit but not used in BaseVotingUserData
+		}
+
+		return proposalID, vote, userData, nil
+	}
+
+	// Passport voting uses 3-field tuple: (nullifier, citizenship, timestampUpperbound)
 	tupleType, _ := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
 		{Name: "nullifier", Type: "uint256"},
 		{Name: "citizenship", Type: "uint256"},

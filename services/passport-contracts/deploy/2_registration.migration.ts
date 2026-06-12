@@ -34,7 +34,8 @@ export = async (deployer: Deployer) => {
   await deployCRSADispatcher(deployer, "SHA2", "65537", "256", "0x0282010100");
   await deployCRSADispatcher(deployer, "SHA512", "65537", "256", "0x0282010100");
   await deployCRSADispatcher(deployer, "SHA512", "65537", "512", "0x0282020100");
-  await deployCRSADispatcher(deployer, "SHA2", "56611", "512", "0x0282018100");
+  await deployCRSADispatcher(deployer, "SHA2", "56611", "384", "0x0282018100"); // fix: keyByteLength was 512 (4096-bit), should be 384 (3072-bit RSA DS cert key)
+  await deployCRSADispatcher(deployer, "SHA1", "56611", "384", "0x0282018100"); // Variant B Iranian passport: DS cert signs with SHA-1, 3072-bit key, CSCA exponent 56611
   await deployCRSADispatcher(deployer, "SHA2", "122125", "256", "0x0282010100");
 
   await deployCRSAPSSDispatcher(deployer, "SHA2", "65537", "256", "0x0282010100");
@@ -62,6 +63,8 @@ export = async (deployer: Deployer) => {
 
   await deployPRSASHA2688Dispatcher(deployer, "65537", "SHA1");
   await deployPRSASHA2688Dispatcher(deployer, "3", "SHA1");
+  // Iranian passports use a non-standard AA RSA exponent (51279 / 0xc84f).
+  await deployPRSASHA2688Dispatcher(deployer, "51279", "SHA1");
 
   await deployPRSASHA2688Dispatcher(deployer, "65537", "SHA2");
   await deployPRSASHA2688Dispatcher(deployer, "3", "SHA2");

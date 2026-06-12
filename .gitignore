@@ -48,6 +48,10 @@ coverage/
 coverage.json
 
 # Temporary files
+# Debug artifacts
+curl_payload*.json
+trace*.txt
+*.poseidon-bak/
 tmp/
 temp/
 deploy/.env.example

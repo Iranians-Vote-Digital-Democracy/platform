@@ -10,6 +10,7 @@ export const C_RSA_SHA2_2048 = keccak256(["string"], ["C_RSA_2048"]);
 export const C_RSA_SHA512_2048 = keccak256(["string"], ["C_RSA_SHA512_2048"]);
 export const C_RSA_SHA512_4096 = keccak256(["string"], ["C_RSA_SHA512_4096"]);
 export const C_RSA_SHA2_3072_56611 = keccak256(["string"], ["C_RSA_3072_56611"]);
+export const C_RSA_SHA1_3072_56611 = keccak256(["string"], ["C_RSA_SHA1_3072_56611"]);
 export const C_RSA_SHA2_2048_122125 = keccak256(["string"], ["C_RSA_2048_122125"]);
 
 export const C_RSAPSS_SHA2_2048 = keccak256(["string"], ["C_RSAPSS_SHA2_2048"]);
@@ -40,6 +41,8 @@ export const C_ECDSA_BRAINPOOLP512R1_SHA512_1024 = keccak256(["string"], ["C_ECD
 export const P_NO_AA = keccak256(["string"], ["P_NO_AA"]);
 export const P_RSA_SHA1_2688 = keccak256(["string"], ["P_RSA_SHA1_2688"]);
 export const P_RSA_SHA1_2688_3 = keccak256(["string"], ["P_RSA_SHA1_2688_3"]);
+// Iranian passports use a non-standard AA RSA exponent (51279 / 0xc84f).
+export const P_RSA_SHA1_2688_51279 = keccak256(["string"], ["P_RSA_SHA1_2688_51279"]);
 export const P_ECDSA_SHA1_2704 = keccak256(["string"], ["P_ECDSA_SHA1_2704"]);
 export const P_RSA_SHA256_2688 = keccak256(["string"], ["P_RSA_SHA256_2688"]);
 export const P_RSA_SHA256_2688_3 = keccak256(["string"], ["P_RSA_SHA256_2688_3"]);
