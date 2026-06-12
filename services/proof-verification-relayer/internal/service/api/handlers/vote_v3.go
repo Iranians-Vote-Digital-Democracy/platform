@@ -194,7 +194,6 @@ func parseNoirCallData(data []byte) (NoirVoteCalldata, error) {
 
 	return config, fmt.Errorf("method not recognized - selector: %x. Expected executeNoir, executeTD1Noir, or executeINID", selector)
 }
-}
 
 // compareSelectors checks if two 4-byte selectors match
 func compareSelectors(a, b []byte) bool {
