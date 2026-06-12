@@ -54,5 +54,8 @@ trace*.txt
 *.poseidon-bak/
 tmp/
 temp/
+ # Local debug helper scripts
+ services/passport-contracts/fix.js
+ services/passport-contracts/make_payload.js
 deploy/.env.example
 deploy/.env.example
