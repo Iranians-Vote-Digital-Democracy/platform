@@ -166,10 +166,16 @@ contract Registration2 is Initializable, UUPSUpgradeable {
     ) external virtual {
         uint256 passportKey_ = _passportValidation(identityKey_, passport_);
 
+        // INID (P_NO_AA) circuit outputs 0 at pub_signals[0] because there is
+        // no DG15 / Active Authentication.  Regular passport circuits output the
+        // DG15 public-key hash.  Use the matching value for ZK verification
+        // while still keying the bond on passportHash.
+        uint256 verifyPassportKey_ = passport_.dataType == P_NO_AA ? 0 : passportKey_;
+
         _verifyNoirZKProof(
             _getPassportVerifier(passport_.zkType),
             certificatesRoot_,
-            passportKey_,
+            verifyPassportKey_,
             uint256(passport_.passportHash),
             identityKey_,
             dgCommit_,
@@ -236,10 +242,12 @@ contract Registration2 is Initializable, UUPSUpgradeable {
     ) external virtual {
         uint256 passportKey_ = _passportValidation(identityKey_, passport_);
 
+        uint256 verifyPassportKey_ = passport_.dataType == P_NO_AA ? 0 : passportKey_;
+
         _verifyNoirZKProof(
             _getPassportVerifier(passport_.zkType),
             certificatesRoot_,
-            passportKey_,
+            verifyPassportKey_,
             uint256(passport_.passportHash),
             identityKey_,
             dgCommit_,

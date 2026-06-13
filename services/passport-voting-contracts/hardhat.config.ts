@@ -13,9 +13,9 @@ import "hardhat-gas-reporter";
 
 import "solidity-coverage";
 
-import "tsconfig-paths/register";
+import "tsconfig-paths/register.js";
 
-import { HardhatUserConfig } from "hardhat/config";
+import type { HardhatUserConfig } from "hardhat/config";
 
 import * as dotenv from "dotenv";
 dotenv.config();

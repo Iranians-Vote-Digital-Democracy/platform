@@ -1531,7 +1531,7 @@ interface IVerifier {
 }
 
 // Smart contract verifier of honk proofs
-contract NoirRegisterIdentity_ID_Card_I_Honk is IVerifier
+contract NoirRegisterIdentity_9_160_3_3_336_216_1_1080_3_256_Honk is IVerifier
 {
     using FrLib for Fr;
 
