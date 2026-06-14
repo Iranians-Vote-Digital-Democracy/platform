@@ -17,12 +17,27 @@ npm-debug.log*
 
 # Hardhat
 .cache/
-services/passport-contracts/scripts
-services/passport-voting-contracts/scripts
+# Ignore everything under contract scripts/ dirs (debug clutter), except the
+# specific files a fresh dev needs to bootstrap local Hardhat. We exclude
+# directory CONTENTS (/*) rather than the directory itself, so the negations
+# below can re-include individual files.
+services/passport-contracts/scripts/*
+services/passport-voting-contracts/scripts/*
 scripts/
 # Exception: sso-svc scripts/ holds permanent smoke runners (fake-wallet.js)
 !services/sso-svc/scripts/
 !services/sso-svc/scripts/**
+# Exception: minimum scripts a fresh dev needs (see
+# .github/copilot-instructions.md "Quick Reference"). We re-include the parent
+# dir, re-exclude its contents, then allowlist specific files.
+!services/passport-contracts/scripts/
+!services/passport-voting-contracts/scripts/
+!services/passport-contracts/scripts/deploy-mock-evidence-registry.js
+!services/passport-contracts/scripts/verify-local-setup.js
+!services/passport-contracts/scripts/advance-time.js
+!services/passport-contracts/scripts/redeploy-inid-honk.js
+!services/passport-voting-contracts/scripts/create-test-proposals.js
+!services/passport-voting-contracts/scripts/diff-public-signals.ts
 artifacts/
 generated-types/
 
