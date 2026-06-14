@@ -83,7 +83,13 @@ const ZERO_DATE = BigInt('0x303030303030'); // = 52983525027888 in decimal = "00
  * 
  * See: https://github.com/rarimo/passport-zk-circuits-noir/blob/main/query_identity_td1/Readme.md
  */
-const SELECTOR_CITIZENSHIP_WHITELIST = 32n; // 2^5 = bit 5 = reveal citizenship in proof output
+const SELECTOR_CITIZENSHIP_WHITELIST = 32n; // 2^5 = bit 5 = reveal citizenship (passport)
+// INID circuit (queryIdentity_inid_ca) requires bit 16 (pers_number + citizenship_check)
+// in addition to bit 5. Without bit 16 the wallet passes citizenship_mask=0 while
+// IDCardVoting._buildPublicSignalsTD1 always derives the mask from the whitelist,
+// causing a public-signals mismatch and tx revert (estimateGas fail).
+// 65569 = 0x10021 = bit 0 (nullifier) + bit 5 (citizenship) + bit 16 (pers_number + citizenship_check)
+const SELECTOR_INID = 65569n;
 
 async function main() {
   console.log("Creating test proposals for local development...\n");
@@ -146,23 +152,12 @@ async function main() {
   //   expirationDateLowerBound: uint256
   // }
 
-  // Create ProposalRules for BioPassportVoting
-  const createProposalRules = (citizenshipWhitelist) => {
-    // ALWAYS use SELECTOR_CITIZENSHIP_WHITELIST (32 = 2^5) for voting proposals
-    // that need to verify citizenship!
-    // 
-    // The selector controls which fields are revealed in the ZK proof output.
-    // Bit 5 = citizenship: if set, the proof will output the actual citizenship value.
-    // If not set, the proof outputs 0 for citizenship, which will fail whitelist checks.
-    // 
-    // selector = 0:  citizenship output = 0 → fails any non-empty whitelist check
-    // selector = 32: citizenship output = actual value → passes if matches whitelist
-    const selector = SELECTOR_CITIZENSHIP_WHITELIST; // 32 = bit 5 = reveal citizenship
-    
+  // Create ProposalRules. Pass selector explicitly: 32 for passport, 65569 for INID.
+  const createProposalRules = (citizenshipWhitelist, selector = SELECTOR_CITIZENSHIP_WHITELIST) => {
     return ethers.AbiCoder.defaultAbiCoder().encode(
       ["tuple(uint256,uint256[],uint256,uint256,uint256,uint256,uint256,uint256)"],
       [[
-        selector, // selector - 32 to reveal citizenship in proof output
+        selector, // 32 = passport, 65569 = INID
         citizenshipWhitelist, // citizenshipWhitelist
         now + oneWeek, // identityCreationTimestampUpperBound
         100, // identityCounterUpperBound
@@ -290,7 +285,7 @@ async function main() {
     acceptedOptions: [3], // Yes/No
     description: "ipfs://QmNoirProposal1_IranFreedomVote_Test",
     votingWhitelist: [ID_CARD_VOTING_ADDRESS],
-    votingWhitelistData: [createProposalRules([IRAN_INID])], // Use 2-letter code!
+    votingWhitelistData: [createProposalRules([IRAN_INID], SELECTOR_INID)], // Use 2-letter code!
   };
 
   try {
@@ -314,7 +309,7 @@ async function main() {
     acceptedOptions: [15], // 4 choices (0b1111)
     description: "ipfs://QmNoirProposal2_FeaturePriority_Test",
     votingWhitelist: [ID_CARD_VOTING_ADDRESS],
-    votingWhitelistData: [createProposalRules([IRAN_INID])], // Use 2-letter code!
+    votingWhitelistData: [createProposalRules([IRAN_INID], SELECTOR_INID)], // Use 2-letter code!
   };
 
   try {
@@ -338,7 +333,7 @@ async function main() {
     acceptedOptions: [7], // 3 choices
     description: "ipfs://QmNoirProposal3_GlobalDemoTest",
     votingWhitelist: [ID_CARD_VOTING_ADDRESS],
-    votingWhitelistData: [createProposalRules([])], // All countries
+    votingWhitelistData: [createProposalRules([], SELECTOR_INID)], // All countries
   };
 
   try {
