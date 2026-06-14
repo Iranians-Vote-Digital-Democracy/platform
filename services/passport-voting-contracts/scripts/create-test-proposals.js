@@ -14,8 +14,9 @@ const { ethers } = require("hardhat");
 // These are deterministic for the current local workflow, but still verify code at runtime below.
 const PROPOSALS_STATE_ADDRESS = "0x021DBfF4A864Aa25c51F0ad2Cd73266Fde66199d";
 const BIO_PASSPORT_VOTING_ADDRESS = "0x6DcBc91229d812910b54dF91b5c2b592572CD6B0";
-// Empty string disables INID proposal creation (default migration only deploys BioPassportVoting).
-const ID_CARD_VOTING_ADDRESS = "";
+// IDCardVoting (deployed via scripts/deploy-idcard-voting.js). Empty string
+// disables INID proposal creation.
+const ID_CARD_VOTING_ADDRESS = "0x6484EB0792c646A4827638Fc1B6F20461418eB00";
 
 // Citizenship codes - use the appropriate length for the document type!
 // TD3 passports use 3-letter ISO codes (e.g., "IRN", "DEU")

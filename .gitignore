@@ -37,6 +37,7 @@ scripts/
 !services/passport-contracts/scripts/advance-time.js
 !services/passport-contracts/scripts/redeploy-inid-honk.js
 !services/passport-voting-contracts/scripts/create-test-proposals.js
+!services/passport-voting-contracts/scripts/deploy-idcard-voting.js
 !services/passport-voting-contracts/scripts/diff-public-signals.ts
 artifacts/
 generated-types/
