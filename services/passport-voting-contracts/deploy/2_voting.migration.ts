@@ -1,6 +1,10 @@
 import { Deployer, Reporter } from "@solarity/hardhat-migrate";
 
-import { ProposalsState__factory, BioPassportVoting__factory, BioPassportVotingVerifier__factory } from "@ethers-v6";
+import {
+  ProposalsState__factory,
+  BioPassportVoting__factory,
+  HonkVerifier__factory,
+} from "@ethers-v6";
 
 import { getConfig } from "./config/config";
 
@@ -9,7 +13,7 @@ export = async (deployer: Deployer) => {
 
   const proposalsState = await deployer.deployed(ProposalsState__factory);
 
-  const bioPassportVotingVerifier = await deployer.deploy(BioPassportVotingVerifier__factory);
+  const bioPassportVotingVerifier = await deployer.deploy(HonkVerifier__factory);
 
   const bioPassportVoting = await deployer.deployERC1967Proxy(BioPassportVoting__factory);
 

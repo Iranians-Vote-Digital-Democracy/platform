@@ -41,7 +41,7 @@ voting_v2:
   enable: true
   rpc: "http://host.docker.internal:8545"
   private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-  proposal_state_address: "0x08A90aF9A6eBBe11c322AD9930CC58E122231B5A"
+  proposal_state_address: "0x021DBfF4A864Aa25c51F0ad2Cd73266Fde66199d"
   block: 0
   gas_limit: 5000000
   check_with_subscribe: false
